@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExamination } from '@/context/ExaminationContext';
 import { calculateScoreAnalysis } from '@/utils/scoreCalculation';
-import { analyzeWithGemini, GeminiResponse } from '@/utils/geminiAnalysis';
 import NavBar from '@/components/NavBar';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
 
 const Results = () => {
   const navigate = useNavigate();
@@ -17,20 +16,12 @@ const Results = () => {
     maxPossibleScore,
     isCompleted,
     patientInfo,
+    mlAnalysis,
     resetExamination
   } = useExamination();
   
-  const [geminiApiKey, setGeminiApiKey] = useState('');
-  const [showApiInput, setShowApiInput] = useState(false);
-  const [geminiResponse, setGeminiResponse] = useState<GeminiResponse>({
-    analysis: '',
-    recommendations: [],
-    loading: false,
-    error: null
-  });
-  
   // Redirect if examination not completed
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isCompleted) {
       navigate('/');
     }
@@ -52,37 +43,23 @@ const Results = () => {
     percentage: data.percentage
   }));
   
-  // Handle Gemini analysis
-  const handleGeminiAnalysis = async () => {
-    if (!geminiApiKey.trim()) {
-      return;
-    }
-    
-    setGeminiResponse({ ...geminiResponse, loading: true, error: null });
-    
-    try {
-      const response = await analyzeWithGemini(
-        totalScore,
-        maxPossibleScore,
-        scoreAnalysis.categoryScores,
-        patientInfo,
-        geminiApiKey
-      );
-      
-      setGeminiResponse(response);
-    } catch (error) {
-      setGeminiResponse({
-        ...geminiResponse,
-        loading: false,
-        error: 'Failed to analyze results with Gemini API'
-      });
-    }
-  };
+  // ML model category radar chart data
+  const radarData = mlAnalysis ? Object.entries(mlAnalysis.categoryScores).map(([category, score]) => ({
+    category,
+    score: Number(score) * 100
+  })) : [];
   
   const handleReset = () => {
     resetExamination();
     navigate('/');
   };
+  
+  // Calculate detailed response time analytics
+  const responseTimeData = Object.entries(answerDetails).map(([id, detail]) => ({
+    id: Number(id),
+    responseTime: detail.responseTimeMs / 1000, // Convert to seconds
+    category: mmseQuestions.find(q => q.id === Number(id))?.category.split(' ').pop() || ''
+  })).sort((a, b) => a.id - b.id);
   
   // Main content
   if (!isCompleted) {
@@ -125,12 +102,27 @@ const Results = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="font-medium">Interpretation</h3>
-                  <div className={`text-lg font-medium ${scoreAnalysis.color}`}>
-                    {scoreAnalysis.severity} Cognitive Status
+                  <h3 className="font-medium">ML-Based Interpretation</h3>
+                  <div className={`text-lg font-medium ${
+                    mlAnalysis ? 
+                      mlAnalysis.severity === 'Normal' ? 'text-green-600' :
+                      mlAnalysis.severity === 'Mild' ? 'text-yellow-600' :
+                      mlAnalysis.severity === 'Moderate' ? 'text-orange-600' :
+                      'text-red-600'
+                    : scoreAnalysis.color
+                  }`}>
+                    {mlAnalysis ? `${mlAnalysis.severity} Cognitive Status` : scoreAnalysis.severity}
+                    {mlAnalysis && (
+                      <span className="text-sm ml-2 opacity-75">
+                        (Confidence: {Math.round(mlAnalysis.confidence * 100)}%)
+                      </span>
+                    )}
                   </div>
                   <p className="text-muted-foreground">
-                    {scoreAnalysis.interpretation}
+                    {mlAnalysis ? 
+                      `The ML model has detected ${mlAnalysis.severity.toLowerCase()} cognitive impairment based on response patterns, response times, and answer content.` :
+                      scoreAnalysis.interpretation
+                    }
                   </p>
                 </div>
                 
@@ -191,104 +183,100 @@ const Results = () => {
             </div>
           </div>
           
-          {/* AI Analysis */}
+          {/* ML Analysis */}
           <div className="space-y-6 animate-slide-in" style={{ animationDelay: '200ms' }}>
-            <h2 className="text-2xl font-medium">AI-Powered Analysis</h2>
+            <h2 className="text-2xl font-medium">ML Model Analysis</h2>
             
             <div className="bg-card-gradient rounded-2xl p-6 md:p-8 shadow-card border border-border/50">
-              {!showApiInput && !geminiResponse.analysis ? (
+              {!mlAnalysis ? (
                 <div className="text-center py-8 space-y-4">
+                  <LoadingSpinner size="md" />
                   <p className="text-muted-foreground">
-                    Get advanced analysis of these results using Google's Gemini AI.
+                    ML analysis could not be performed.
                   </p>
-                  <button
-                    onClick={() => setShowApiInput(true)}
-                    className="btn-primary rounded-lg"
-                  >
-                    Generate AI Analysis
-                  </button>
-                </div>
-              ) : showApiInput && !geminiResponse.analysis ? (
-                <div className="max-w-md mx-auto space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Enter your Gemini API key to generate an in-depth analysis of the assessment results.
-                  </p>
-                  <div className="space-y-2">
-                    <input
-                      type="password"
-                      value={geminiApiKey}
-                      onChange={(e) => setGeminiApiKey(e.target.value)}
-                      placeholder="Enter Gemini API Key"
-                      className="w-full p-3 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                    />
-                    {geminiResponse.error && (
-                      <div className="text-sm text-red-500">
-                        {geminiResponse.error}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handleGeminiAnalysis}
-                      disabled={!geminiApiKey.trim() || geminiResponse.loading}
-                      className="btn-primary rounded-lg flex-1"
-                    >
-                      {geminiResponse.loading ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <LoadingSpinner size="sm" />
-                          <span>Analyzing...</span>
-                        </div>
-                      ) : (
-                        'Generate Analysis'
-                      )}
-                    </button>
-                    <button
-                      onClick={() => setShowApiInput(false)}
-                      className="btn-secondary rounded-lg"
-                    >
-                      Cancel
-                    </button>
-                  </div>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {geminiResponse.loading ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-4">
-                      <LoadingSpinner size="lg" />
-                      <p className="text-muted-foreground">Analyzing results with Gemini AI...</p>
+                <div className="space-y-8">
+                  {/* Cognitive Strength Radar Chart */}
+                  <div>
+                    <h3 className="text-xl font-medium mb-4">Cognitive Domain Analysis</h3>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart outerRadius={90} data={radarData}>
+                          <PolarGrid />
+                          <PolarAngleAxis dataKey="category" />
+                          <PolarRadiusAxis domain={[0, 100]} />
+                          <Radar
+                            name="Cognitive Function"
+                            dataKey="score"
+                            stroke="#8884d8"
+                            fill="#8884d8"
+                            fillOpacity={0.6}
+                          />
+                          <Tooltip formatter={(value) => [`${value.toFixed(1)}%`, 'Strength']} />
+                          <Legend />
+                        </RadarChart>
+                      </ResponsiveContainer>
                     </div>
-                  ) : (
-                    <>
-                      <div className="space-y-4">
-                        <h3 className="text-xl font-medium">Clinical Analysis</h3>
-                        <div className="prose prose-slate max-w-none">
-                          <p className="text-muted-foreground whitespace-pre-line">
-                            {geminiResponse.analysis}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {geminiResponse.recommendations.length > 0 && (
-                        <div className="space-y-4">
-                          <h3 className="text-xl font-medium">Recommendations</h3>
-                          <ul className="space-y-2">
-                            {geminiResponse.recommendations.map((rec, index) => (
-                              <li key={index} className="bg-primary/5 p-4 rounded-lg border border-primary/10">
-                                {rec}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                  </div>
+                  
+                  {/* Response Time Analysis */}
+                  <div>
+                    <h3 className="text-xl font-medium mb-4">Response Time Analysis</h3>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={responseTimeData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="id" label={{ value: 'Question Number', position: 'insideBottom', offset: -5 }} />
+                          <YAxis label={{ value: 'Response Time (sec)', angle: -90, position: 'insideLeft' }} />
+                          <Tooltip 
+                            formatter={(value) => [`${value.toFixed(2)} seconds`, 'Response Time']}
+                            labelFormatter={(id) => `Question ${id} (${responseTimeData.find(d => d.id === id)?.category || ''})`}
+                          />
+                          <Bar dataKey="responseTime" fill="#FF8042" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 pt-4">
+                    <h3 className="text-xl font-medium">Recommendations</h3>
+                    <ul className="space-y-2">
+                      {mlAnalysis.severity === 'Normal' ? (
+                        <li className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                          Maintain cognitive health through regular mental exercises and social engagement.
+                        </li>
+                      ) : mlAnalysis.severity === 'Mild' ? (
+                        <>
+                          <li className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                            Consider a follow-up assessment with a healthcare professional.
+                          </li>
+                          <li className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                            Engage in regular cognitive exercises targeting areas of weakness.
+                          </li>
+                        </>
+                      ) : (
+                        <>
+                          <li className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                            Comprehensive evaluation by a neurologist or geriatric specialist is recommended.
+                          </li>
+                          <li className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                            Consider structured cognitive rehabilitation therapy.
+                          </li>
+                          <li className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                            Evaluation for possible medication or treatment options.
+                          </li>
+                        </>
                       )}
-                      
-                      <div className="text-sm text-muted-foreground mt-6">
-                        <p>
-                          Analysis generated using Google Gemini AI. This information is for reference only and 
-                          should not replace professional medical advice.
-                        </p>
-                      </div>
-                    </>
-                  )}
+                    </ul>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground mt-6">
+                    <p>
+                      Analysis generated using an integrated machine learning model. This information is for reference only and 
+                      should not replace professional medical advice.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

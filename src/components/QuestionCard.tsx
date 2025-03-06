@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { MMSEQuestion } from '@/data/mmseQuestions';
+import { mlService } from '@/utils/mlService';
 
 interface QuestionCardProps {
   question: MMSEQuestion;
-  onAnswer: (score: number, answer: string) => void;
+  onAnswer: (score: number, answer: string, responseTimeMs: number) => void;
   className?: string;
 }
 
@@ -16,19 +17,41 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [textAnswer, setTextAnswer] = useState<string>('');
+  const [isTimerActive, setIsTimerActive] = useState(true);
+  const timerStart = useRef<number>(Date.now());
+  
+  // Start timer when question is shown
+  useEffect(() => {
+    timerStart.current = Date.now();
+    setIsTimerActive(true);
+    
+    return () => {
+      setIsTimerActive(false);
+    };
+  }, [question.id]);
   
   const handleOptionSelect = (optionIndex: number) => {
     setSelectedOption(optionIndex);
     const option = question.options?.[optionIndex];
+    const responseTime = Date.now() - timerStart.current;
+    
     if (option) {
-      onAnswer(option.score, option.text);
+      onAnswer(option.score, option.text, responseTime);
     }
   };
   
   const handleTextSubmit = () => {
     if (textAnswer.trim()) {
-      // For free text answers, defer scoring to parent component
-      onAnswer(-1, textAnswer);
+      const responseTime = Date.now() - timerStart.current;
+      
+      // Use ML service to analyze text response
+      let score = -1;
+      if (question.autoScore) {
+        score = mlService.analyzeTextResponse(textAnswer, question.category);
+        score = Math.round(score * question.maxScore);
+      }
+      
+      onAnswer(score, textAnswer, responseTime);
     }
   };
   
@@ -97,6 +120,23 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                 className="btn-primary w-full mt-2"
               >
                 Submit Answer
+              </button>
+            </div>
+          )}
+          
+          {question.type === 'drawing' && (
+            <div className="space-y-3">
+              <div className="border border-border rounded-lg p-4 bg-white aspect-square flex items-center justify-center">
+                <p className="text-muted-foreground">Drawing interface would be implemented here</p>
+              </div>
+              <button 
+                onClick={() => {
+                  const responseTime = Date.now() - timerStart.current;
+                  onAnswer(0, "Drawing submission", responseTime);
+                }}
+                className="btn-primary w-full mt-2"
+              >
+                Submit Drawing
               </button>
             </div>
           )}

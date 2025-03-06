@@ -9,9 +9,11 @@ export interface MMSEQuestion {
   category: string;
   text: string;
   instructions?: string;
-  type: 'multiple-choice' | 'free-text';
+  type: 'multiple-choice' | 'free-text' | 'drawing';
   options?: MMSEOption[];
   maxScore: number;
+  autoScore?: boolean; // Indicates if this question should be auto-scored by ML
+  expectedAnswers?: string[]; // Expected answers for automatic evaluation
 }
 
 export const mmseQuestions: MMSEQuestion[] = [
@@ -20,12 +22,10 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 1,
     category: "Orientation to Time",
     text: "What year is it now?",
-    type: "multiple-choice",
-    options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
-    ],
-    maxScore: 1
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true,
+    expectedAnswers: [new Date().getFullYear().toString()]
   },
   {
     id: 2,
@@ -33,8 +33,11 @@ export const mmseQuestions: MMSEQuestion[] = [
     text: "What season is it?",
     type: "multiple-choice",
     options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
+      { text: "Spring", score: 1 },
+      { text: "Summer", score: 1 },
+      { text: "Fall/Autumn", score: 1 },
+      { text: "Winter", score: 1 },
+      { text: "Don't know", score: 0 }
     ],
     maxScore: 1
   },
@@ -42,23 +45,17 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 3,
     category: "Orientation to Time",
     text: "What month is it?",
-    type: "multiple-choice",
-    options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
-    ],
-    maxScore: 1
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true
   },
   {
     id: 4,
     category: "Orientation to Time",
     text: "What is today's date?",
-    type: "multiple-choice",
-    options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
-    ],
-    maxScore: 1
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true
   },
   {
     id: 5,
@@ -66,8 +63,14 @@ export const mmseQuestions: MMSEQuestion[] = [
     text: "What day of the week is it?",
     type: "multiple-choice",
     options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
+      { text: "Monday", score: 1 },
+      { text: "Tuesday", score: 1 },
+      { text: "Wednesday", score: 1 },
+      { text: "Thursday", score: 1 },
+      { text: "Friday", score: 1 },
+      { text: "Saturday", score: 1 },
+      { text: "Sunday", score: 1 },
+      { text: "Don't know", score: 0 }
     ],
     maxScore: 1
   },
@@ -77,56 +80,41 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 6,
     category: "Orientation to Place",
     text: "What country are we in?",
-    type: "multiple-choice",
-    options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
-    ],
-    maxScore: 1
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true
   },
   {
     id: 7,
     category: "Orientation to Place",
     text: "What state/province are we in?",
-    type: "multiple-choice",
-    options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
-    ],
-    maxScore: 1
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true
   },
   {
     id: 8,
     category: "Orientation to Place",
     text: "What city/town are we in?",
-    type: "multiple-choice",
-    options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
-    ],
-    maxScore: 1
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true
   },
   {
     id: 9,
     category: "Orientation to Place",
     text: "What is the name of this building/hospital/clinic?",
-    type: "multiple-choice",
-    options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
-    ],
-    maxScore: 1
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true
   },
   {
     id: 10,
     category: "Orientation to Place",
     text: "What floor are we on?",
-    type: "multiple-choice",
-    options: [
-      { text: "Correct", score: 1 },
-      { text: "Incorrect", score: 0 }
-    ],
-    maxScore: 1
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true
   },
 
   // Registration - 3 points
@@ -134,7 +122,7 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 11,
     category: "Registration",
     text: "Remember these three words: APPLE, TABLE, PENNY.",
-    instructions: "Ask the patient if they can repeat the words. Score one point for each word correctly repeated on this first attempt. Then repeat the words until all three are learned (up to 6 trials).",
+    instructions: "Ask the patient to repeat the words. Score based on first attempt. Then repeat the words until all three are learned (up to 6 trials).",
     type: "multiple-choice",
     options: [
       { text: "All 3 words repeated correctly", score: 3 },
@@ -149,18 +137,12 @@ export const mmseQuestions: MMSEQuestion[] = [
   {
     id: 12,
     category: "Attention and Calculation",
-    text: "Serial 7s: Count backwards from 100 by subtracting 7 each time.",
-    instructions: "Score one point for each correct subtraction up to 5 points. Stop after 5 subtractions.",
-    type: "multiple-choice",
-    options: [
-      { text: "All 5 calculations correct (93, 86, 79, 72, 65)", score: 5 },
-      { text: "4 calculations correct", score: 4 },
-      { text: "3 calculations correct", score: 3 },
-      { text: "2 calculations correct", score: 2 },
-      { text: "1 calculation correct", score: 1 },
-      { text: "0 calculations correct", score: 0 }
-    ],
-    maxScore: 5
+    text: "Serial 7s: Count backwards from 100 by subtracting 7 each time (provide five answers).",
+    instructions: "Enter the five numbers the patient gives, separated by commas (e.g., 93, 86, 79, 72, 65)",
+    type: "free-text",
+    maxScore: 5,
+    autoScore: true,
+    expectedAnswers: ["93, 86, 79, 72, 65"]
   },
 
   // Recall - 3 points
@@ -168,15 +150,11 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 13,
     category: "Recall",
     text: "Recall the three words I asked you to remember earlier.",
-    instructions: "Score one point for each word correctly recalled.",
-    type: "multiple-choice",
-    options: [
-      { text: "All 3 words recalled correctly", score: 3 },
-      { text: "2 words recalled correctly", score: 2 },
-      { text: "1 word recalled correctly", score: 1 },
-      { text: "0 words recalled correctly", score: 0 }
-    ],
-    maxScore: 3
+    instructions: "Enter the words the patient recalls, separated by commas.",
+    type: "free-text",
+    maxScore: 3,
+    autoScore: true,
+    expectedAnswers: ["apple, table, penny", "apple,table,penny"]
   },
 
   // Language - 2 points
@@ -184,14 +162,11 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 14,
     category: "Language",
     text: "Name these objects:",
-    instructions: "Point to a watch and a pencil. Score one point for each item correctly named.",
-    type: "multiple-choice",
-    options: [
-      { text: "Both objects named correctly", score: 2 },
-      { text: "1 object named correctly", score: 1 },
-      { text: "0 objects named correctly", score: 0 }
-    ],
-    maxScore: 2
+    instructions: "Show a watch and a pencil. Enter the names provided by the patient, separated by commas.",
+    type: "free-text",
+    maxScore: 2,
+    autoScore: true,
+    expectedAnswers: ["watch, pencil", "watch,pencil"]
   },
 
   // Language - 1 point
@@ -199,12 +174,11 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 15,
     category: "Language",
     text: "Repeat the following phrase: 'No ifs, ands, or buts.'",
-    type: "multiple-choice",
-    options: [
-      { text: "Phrase repeated correctly", score: 1 },
-      { text: "Phrase not repeated correctly", score: 0 }
-    ],
-    maxScore: 1
+    instructions: "Enter exactly what the patient says.",
+    type: "free-text",
+    maxScore: 1,
+    autoScore: true,
+    expectedAnswers: ["no ifs, ands, or buts", "no ifs ands or buts"]
   },
 
   // Language - 3 points
@@ -212,6 +186,7 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 16,
     category: "Language",
     text: "Follow a 3-stage command: 'Take this paper in your right hand, fold it in half, and put it on the floor.'",
+    instructions: "Check which actions were completed correctly.",
     type: "multiple-choice",
     options: [
       { text: "All 3 commands performed correctly", score: 3 },
@@ -227,11 +202,11 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 17,
     category: "Language",
     text: "Read and obey the following: 'CLOSE YOUR EYES'",
-    instructions: "Show the patient the written instruction.",
+    instructions: "Show the patient the written instruction and observe their response.",
     type: "multiple-choice",
     options: [
-      { text: "Command obeyed correctly", score: 1 },
-      { text: "Command not obeyed correctly", score: 0 }
+      { text: "Closes eyes", score: 1 },
+      { text: "Does not close eyes", score: 0 }
     ],
     maxScore: 1
   },
@@ -241,9 +216,10 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 18,
     category: "Language",
     text: "Write a sentence.",
-    instructions: "The sentence must contain a subject and a verb and make sense. Spelling, grammar, and punctuation are not important.",
+    instructions: "Ask the patient to write a sentence. The sentence must contain a subject and a verb and make sense.",
     type: "free-text",
-    maxScore: 1
+    maxScore: 1,
+    autoScore: true
   },
 
   // Visuospatial - 1 point
@@ -251,12 +227,8 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 19,
     category: "Visuospatial",
     text: "Copy this design (two intersecting pentagons).",
-    instructions: "All 10 angles must be present and the two figures must intersect to score 1 point.",
-    type: "multiple-choice",
-    options: [
-      { text: "Design copied correctly", score: 1 },
-      { text: "Design not copied correctly", score: 0 }
-    ],
+    instructions: "Ask the patient to copy the design. All 10 angles must be present and the two figures must intersect.",
+    type: "drawing",
     maxScore: 1
   }
 ];

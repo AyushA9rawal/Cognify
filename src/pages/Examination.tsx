@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useExamination } from '@/context/ExaminationContext';
 import QuestionCard from '@/components/QuestionCard';
 import ProgressIndicator from '@/components/ProgressIndicator';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { mmseQuestions } from '@/data/mmseQuestions';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -105,6 +106,7 @@ const Examination = () => {
     answers,
     totalScore,
     hasStarted,
+    isAnalyzing,
     startExamination,
     goToNextQuestion,
     goToPreviousQuestion,
@@ -121,9 +123,9 @@ const Examination = () => {
   const isCurrentQuestionAnswered = answers[currentQuestion?.id] !== undefined;
   
   // Handle answer selection
-  const handleAnswerSelect = (score: number, answer: string) => {
+  const handleAnswerSelect = (score: number, answer: string, responseTimeMs: number) => {
     if (!currentQuestion) return;
-    setAnswer(currentQuestion.id, score, answer);
+    setAnswer(currentQuestion.id, score, answer, responseTimeMs);
   };
   
   // Navigate to next question with transition
@@ -135,10 +137,16 @@ const Examination = () => {
         setIsTransitioning(false);
       }, 300);
     } else {
-      // Complete examination
-      completeExamination();
-      navigate('/results');
+      // Complete examination with ML analysis
+      handleComplete();
     }
+  };
+  
+  // Handle completion with ML analysis
+  const handleComplete = async () => {
+    setIsTransitioning(true);
+    await completeExamination();
+    navigate('/results');
   };
   
   // Navigate to previous question with transition
@@ -151,6 +159,19 @@ const Examination = () => {
       }, 300);
     }
   };
+  
+  // Show loading during ML analysis
+  if (isAnalyzing) {
+    return (
+      <div className="min-h-screen bg-gradient-background flex flex-col items-center justify-center">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <h2 className="text-xl font-medium">Analyzing Responses</h2>
+          <p className="text-muted-foreground">Using ML model to evaluate cognitive status...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-gradient-background py-8 md:py-12 flex flex-col">
@@ -201,7 +222,7 @@ const Examination = () => {
                 disabled={!isCurrentQuestionAnswered}
                 className="btn-primary px-6 rounded-lg disabled:opacity-50"
               >
-                {currentQuestionIndex < mmseQuestions.length - 1 ? 'Next' : 'Complete'}
+                {currentQuestionIndex < mmseQuestions.length - 1 ? 'Next' : 'Complete Assessment'}
               </button>
             </div>
             

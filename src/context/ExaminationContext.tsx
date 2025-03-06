@@ -1,10 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { mmseQuestions, getMaxPossibleScore } from '@/data/mmseQuestions';
+import { mlService, AnswerFeatures } from '@/utils/mlService';
 
 type AnswerData = {
   score: number;
   answer: string;
+  responseTimeMs: number;
 };
 
 type ExaminationContextType = {
@@ -16,11 +18,13 @@ type ExaminationContextType = {
   isCompleted: boolean;
   hasStarted: boolean;
   patientInfo: PatientInfo;
+  mlAnalysis: any;
+  isAnalyzing: boolean;
   startExamination: (info: PatientInfo) => void;
   goToNextQuestion: () => void;
   goToPreviousQuestion: () => void;
-  setAnswer: (questionId: number, score: number, answer: string) => void;
-  completeExamination: () => void;
+  setAnswer: (questionId: number, score: number, answer: string, responseTimeMs: number) => void;
+  completeExamination: () => Promise<void>;
   resetExamination: () => void;
 };
 
@@ -46,8 +50,18 @@ export const ExaminationProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isCompleted, setIsCompleted] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [patientInfo, setPatientInfo] = useState<PatientInfo>(initialPatientInfo);
+  const [mlAnalysis, setMlAnalysis] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   const maxPossibleScore = getMaxPossibleScore();
+  
+  // Load ML model on initial mount
+  useEffect(() => {
+    // Initialize ML service in the background
+    mlService.initialize().then(success => {
+      console.log('ML model initialization:', success ? 'successful' : 'failed');
+    });
+  }, []);
   
   // Recalculate total score whenever answers change
   useEffect(() => {
@@ -73,22 +87,75 @@ export const ExaminationProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
   
-  const setAnswer = (questionId: number, score: number, answer: string) => {
-    // For free text questions where score is deferred (-1), we need to evaluate
-    if (score === -1) {
-      // Simple evaluation for sentence question - if it has subject and verb, give 1 point
-      if (questionId === 18) { // Write a sentence question
+  const setAnswer = (questionId: number, score: number, answer: string, responseTimeMs: number) => {
+    // For auto-scored questions where score is deferred (-1), evaluate using ML service
+    const question = mmseQuestions.find(q => q.id === questionId);
+    
+    if (score === -1 && question) {
+      if (question.autoScore) {
+        // Use ML service to score the response
+        score = mlService.analyzeTextResponse(answer, question.category);
+        score = Math.round(score * question.maxScore);
+      } else if (question.id === 18) { // Write a sentence question
+        // Simple evaluation for sentence question - if it has subject and verb, give 1 point
         const hasSentenceStructure = answer.trim().split(' ').length >= 2;
         score = hasSentenceStructure ? 1 : 0;
       }
     }
     
     setAnswers(prev => ({ ...prev, [questionId]: score }));
-    setAnswerDetails(prev => ({ ...prev, [questionId]: { score, answer } }));
+    setAnswerDetails(prev => ({ 
+      ...prev, 
+      [questionId]: { score, answer, responseTimeMs } 
+    }));
   };
   
-  const completeExamination = () => {
-    setIsCompleted(true);
+  const completeExamination = async () => {
+    setIsAnalyzing(true);
+    
+    try {
+      // Prepare data for ML analysis
+      const features: AnswerFeatures = {
+        categoryResponses: {},
+        patientAge: parseInt(patientInfo.age) || 0,
+        patientGender: patientInfo.gender as 'Male' | 'Female' | 'Other',
+        responseTimeMs: {}
+      };
+      
+      // Group answers by category for ML analysis
+      mmseQuestions.forEach(question => {
+        // Initialize category array if not exists
+        if (!features.categoryResponses[question.category]) {
+          features.categoryResponses[question.category] = [];
+        }
+        
+        // Add answer score (normalized) to category responses
+        const answerDetail = answerDetails[question.id];
+        if (answerDetail) {
+          features.categoryResponses[question.category].push(
+            answerDetail.score / question.maxScore
+          );
+          features.responseTimeMs[question.id] = answerDetail.responseTimeMs;
+        } else {
+          // No answer provided, add 0
+          features.categoryResponses[question.category].push(0);
+          features.responseTimeMs[question.id] = 0;
+        }
+      });
+      
+      // Get ML analysis
+      const analysis = await mlService.analyzeMentalState(features);
+      setMlAnalysis(analysis);
+      
+      setIsCompleted(true);
+      setIsAnalyzing(false);
+    } catch (error) {
+      console.error("Error during ML analysis:", error);
+      // Fallback to traditional scoring if ML fails
+      setMlAnalysis(null);
+      setIsCompleted(true);
+      setIsAnalyzing(false);
+    }
   };
   
   const resetExamination = () => {
@@ -99,6 +166,7 @@ export const ExaminationProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setIsCompleted(false);
     setHasStarted(false);
     setPatientInfo(initialPatientInfo);
+    setMlAnalysis(null);
   };
   
   const value = {
@@ -110,6 +178,8 @@ export const ExaminationProvider: React.FC<{ children: React.ReactNode }> = ({ c
     isCompleted,
     hasStarted,
     patientInfo,
+    mlAnalysis,
+    isAnalyzing,
     startExamination,
     goToNextQuestion,
     goToPreviousQuestion,
