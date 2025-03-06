@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExamination } from '@/context/ExaminationContext';
@@ -6,6 +7,15 @@ import { mmseQuestions } from '@/data/mmseQuestions';
 import NavBar from '@/components/NavBar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
+
+// Helper functions for formatting values in charts
+const formatRadarValue = (value: number): string => {
+  return `${value.toFixed(0)}%`;
+};
+
+const formatResponseTime = (value: number): string => {
+  return `${value.toFixed(1)} sec`;
+};
 
 const Results = () => {
   const navigate = useNavigate();
