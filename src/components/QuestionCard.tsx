@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { MMSEQuestion } from '@/data/mmseQuestions';
 import { mlService } from '@/utils/mlService';
+import { Watch } from 'lucide-react';
 
 interface QuestionCardProps {
   question: MMSEQuestion;
@@ -73,6 +74,24 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             <p className="text-sm text-muted-foreground">{question.instructions}</p>
           )}
         </div>
+        
+        {/* Display image if available */}
+        {question.image || question.category === "Object Recognition" ? (
+          <div className="flex justify-center py-4">
+            {question.image ? (
+              <img 
+                src={question.image} 
+                alt="Question visual" 
+                className="max-h-56 object-contain rounded-lg border border-border/50" 
+              />
+            ) : (
+              <div className="p-6 border border-border/50 rounded-lg bg-primary/5 flex flex-col items-center">
+                <Watch size={96} className="text-primary mb-2" />
+                <span className="text-sm text-muted-foreground">Wristwatch</span>
+              </div>
+            )}
+          </div>
+        ) : null}
         
         <div className="space-y-4 pt-2">
           {question.type === 'multiple-choice' && question.options && (

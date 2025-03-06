@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExamination } from '@/context/ExaminationContext';
 import { calculateScoreAnalysis } from '@/utils/scoreCalculation';
+import { mmseQuestions } from '@/data/mmseQuestions';
 import NavBar from '@/components/NavBar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
@@ -20,30 +20,26 @@ const Results = () => {
     resetExamination
   } = useExamination();
   
-  // Redirect if examination not completed
   React.useEffect(() => {
     if (!isCompleted) {
       navigate('/');
     }
   }, [isCompleted, navigate]);
   
-  // Calculate score analysis
   const scoreAnalysis = calculateScoreAnalysis(answers, maxPossibleScore);
   
-  // Prepare data for charts
   const pieData = [
     { name: 'Score', value: totalScore, color: '#42A5F5' },
     { name: 'Missed', value: maxPossibleScore - totalScore, color: '#E0E0E0' }
   ];
   
   const categoryData = Object.entries(scoreAnalysis.categoryScores).map(([category, data]) => ({
-    name: category.split(' ').pop() || category, // Just use the last word for brevity
+    name: category.split(' ').pop() || category,
     score: data.score,
     maxScore: data.maxScore,
     percentage: data.percentage
   }));
   
-  // ML model category radar chart data
   const radarData = mlAnalysis ? Object.entries(mlAnalysis.categoryScores).map(([category, score]) => ({
     category,
     score: Number(score) * 100
@@ -54,14 +50,12 @@ const Results = () => {
     navigate('/');
   };
   
-  // Calculate detailed response time analytics
   const responseTimeData = Object.entries(answerDetails).map(([id, detail]) => ({
     id: Number(id),
-    responseTime: detail.responseTimeMs / 1000, // Convert to seconds
+    responseTime: detail.responseTimeMs / 1000,
     category: mmseQuestions.find(q => q.id === Number(id))?.category.split(' ').pop() || ''
   })).sort((a, b) => a.id - b.id);
   
-  // Main content
   if (!isCompleted) {
     return <div className="min-h-screen flex items-center justify-center">
       <LoadingSpinner size="lg" />
@@ -74,7 +68,6 @@ const Results = () => {
       
       <main className="pt-20 px-4 sm:px-6 md:px-8 max-w-5xl mx-auto">
         <div className="space-y-12">
-          {/* Header */}
           <div className="text-center space-y-4 animate-slide-in">
             <div className="inline-flex px-3 py-1 text-sm font-medium bg-primary/10 text-primary rounded-full">
               Assessment Complete
@@ -86,7 +79,6 @@ const Results = () => {
             </p>
           </div>
           
-          {/* Overall Score Card */}
           <div className="bg-card-gradient rounded-2xl p-6 md:p-8 shadow-card border border-border/50 animate-scale-up">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div className="space-y-6">
@@ -160,7 +152,6 @@ const Results = () => {
             </div>
           </div>
           
-          {/* Category Breakdown */}
           <div className="space-y-6 animate-slide-in" style={{ animationDelay: '100ms' }}>
             <h2 className="text-2xl font-medium">Category Breakdown</h2>
             
@@ -183,7 +174,6 @@ const Results = () => {
             </div>
           </div>
           
-          {/* ML Analysis */}
           <div className="space-y-6 animate-slide-in" style={{ animationDelay: '200ms' }}>
             <h2 className="text-2xl font-medium">ML Model Analysis</h2>
             
@@ -197,7 +187,6 @@ const Results = () => {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {/* Cognitive Strength Radar Chart */}
                   <div>
                     <h3 className="text-xl font-medium mb-4">Cognitive Domain Analysis</h3>
                     <div className="h-80">
@@ -213,14 +202,13 @@ const Results = () => {
                             fill="#8884d8"
                             fillOpacity={0.6}
                           />
-                          <Tooltip formatter={(value) => [`${value.toFixed(1)}%`, 'Strength']} />
+                          <Tooltip formatter={(value) => [formatRadarValue(value), 'Strength']} />
                           <Legend />
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                   
-                  {/* Response Time Analysis */}
                   <div>
                     <h3 className="text-xl font-medium mb-4">Response Time Analysis</h3>
                     <div className="h-80">
@@ -230,7 +218,7 @@ const Results = () => {
                           <XAxis dataKey="id" label={{ value: 'Question Number', position: 'insideBottom', offset: -5 }} />
                           <YAxis label={{ value: 'Response Time (sec)', angle: -90, position: 'insideLeft' }} />
                           <Tooltip 
-                            formatter={(value) => [`${value.toFixed(2)} seconds`, 'Response Time']}
+                            formatter={(value) => [formatResponseTime(value), 'Response Time']}
                             labelFormatter={(id) => `Question ${id} (${responseTimeData.find(d => d.id === id)?.category || ''})`}
                           />
                           <Bar dataKey="responseTime" fill="#FF8042" />
