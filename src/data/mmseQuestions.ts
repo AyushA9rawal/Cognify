@@ -1,4 +1,3 @@
-
 export interface MMSEOption {
   text: string;
   score: number;
@@ -98,7 +97,7 @@ export const mmseQuestions: MMSEQuestion[] = [
     maxScore: 1,
     autoScore: true,
     expectedAnswers: ["Watch", "Wristwatch", "Clock"],
-    image: "/images/watch.jpg" // This will be created
+    image: "/images/custom-watch.jpg" // UPDATE THIS PATH to your custom watch image
   },
   
   // Recall

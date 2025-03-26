@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 
 interface ModelPrediction {
@@ -26,40 +25,27 @@ class MLService {
     
     try {
       this.loading = true;
-      console.log('Loading MMSE assessment model...');
+      console.log('Loading custom MMSE assessment model...');
       
-      // In a real implementation, we would load the model from a CDN or local storage
-      // this.model = await tf.loadLayersModel('https://example.com/mmse-model/model.json');
+      // Load your custom model here
+      // Replace this URL with the path to your model files
+      this.model = await tf.loadLayersModel('/models/custom-mmse-model/model.json');
       
-      // For demonstration purposes, we'll create a simple model that processes the features
-      this.model = tf.sequential({
-        layers: [
-          tf.layers.dense({ inputShape: [28], units: 16, activation: 'relu' }),
-          tf.layers.dense({ units: 8, activation: 'relu' }),
-          tf.layers.dense({ units: 4, activation: 'softmax' })
-        ]
-      });
-      
-      this.model.compile({
-        optimizer: 'adam',
-        loss: 'categoricalCrossentropy',
-        metrics: ['accuracy']
-      });
-      
-      // Initialize vocabulary map for text analysis
+      // If your model requires a vocabulary map for text analysis, initialize it here
       this.vocabMap = {
-        // Common vocabulary in MMSE responses
+        // Update this with the vocabulary required by your model
         "confused": 1, "oriented": 2, "remember": 3, "forget": 4,
         "know": 5, "unsure": 6, "certain": 7, "clear": 8,
         "unclear": 9, "yes": 10, "no": 11, "maybe": 12
+        // Add all required words for your model
       };
       
       this.initialized = true;
       this.loading = false;
-      console.log('MMSE assessment model loaded successfully');
+      console.log('Custom MMSE assessment model loaded successfully');
       return true;
     } catch (error) {
-      console.error('Failed to load MMSE model:', error);
+      console.error('Failed to load custom MMSE model:', error);
       this.loading = false;
       return false;
     }
