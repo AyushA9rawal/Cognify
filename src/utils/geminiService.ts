@@ -1,4 +1,3 @@
-
 // This is a simple service to integrate with Google's Gemini API
 
 interface GeminiConfig {
@@ -6,14 +5,22 @@ interface GeminiConfig {
   modelName: string;
 }
 
+// Replace this with your actual Gemini API key
+const GEMINI_KEY = "YOUR_GEMINI_API_KEY_HERE";
+
 class GeminiService {
-  private apiKey: string | null = null;
+  private apiKey: string = GEMINI_KEY;
   private modelName: string = 'gemini-pro';
   private baseUrl: string = 'https://generativelanguage.googleapis.com/v1/models';
   
   constructor() {
-    // Try to get API key from localStorage if previously saved
-    this.apiKey = localStorage.getItem('gemini_api_key');
+    // If no key is hardcoded, try to get API key from localStorage if previously saved
+    if (!this.apiKey || this.apiKey === "YOUR_GEMINI_API_KEY_HERE") {
+      const storedKey = localStorage.getItem('gemini_api_key');
+      if (storedKey) {
+        this.apiKey = storedKey;
+      }
+    }
   }
   
   setApiKey(key: string): void {
@@ -27,7 +34,7 @@ class GeminiService {
   }
   
   getConfig(): GeminiConfig | null {
-    if (!this.apiKey) return null;
+    if (!this.apiKey || this.apiKey === "YOUR_GEMINI_API_KEY_HERE") return null;
     return {
       apiKey: this.apiKey,
       modelName: this.modelName
@@ -35,7 +42,7 @@ class GeminiService {
   }
   
   hasApiKey(): boolean {
-    return this.apiKey !== null && this.apiKey.trim() !== '';
+    return this.apiKey !== null && this.apiKey !== "YOUR_GEMINI_API_KEY_HERE" && this.apiKey.trim() !== '';
   }
   
   async analyzeResponses(responses: Record<string, string>): Promise<string> {

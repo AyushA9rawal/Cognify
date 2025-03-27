@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExamination } from '@/context/ExaminationContext';
 import { calculateScoreAnalysis } from '@/utils/scoreCalculation';
@@ -10,8 +10,6 @@ import ResultsHeader from '@/components/results/ResultsHeader';
 import ScoreOverview from '@/components/results/ScoreOverview';
 import CategoryBreakdown from '@/components/results/CategoryBreakdown';
 import MLAnalysisSection from '@/components/results/MLAnalysisSection';
-import ApiKeySetup from '@/components/ApiKeySetup';
-import { geminiService } from '@/utils/geminiService';
 
 const Results = () => {
   const navigate = useNavigate();
@@ -25,8 +23,6 @@ const Results = () => {
     mlAnalysis,
     resetExamination
   } = useExamination();
-  
-  const [showApiKeySetup, setShowApiKeySetup] = useState(!geminiService.hasApiKey());
   
   React.useEffect(() => {
     if (!isCompleted) {
@@ -94,31 +90,6 @@ const Results = () => {
             radarData={radarData}
             responseTimeData={responseTimeData}
           />
-          
-          {/* Gemini API Key Setup Section */}
-          {showApiKeySetup ? (
-            <div className="space-y-6 animate-slide-in" style={{ animationDelay: '300ms' }}>
-              <h2 className="text-2xl font-medium">Enhanced Analysis Configuration</h2>
-              <ApiKeySetup onApiKeySet={() => setShowApiKeySetup(false)} />
-            </div>
-          ) : (
-            <div className="space-y-6 animate-slide-in" style={{ animationDelay: '300ms' }}>
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-medium">Enhanced Analysis Configuration</h2>
-                <button 
-                  onClick={() => setShowApiKeySetup(true)}
-                  className="btn-secondary text-sm px-3 py-1 rounded-md"
-                >
-                  Change API Key
-                </button>
-              </div>
-              <div className="bg-card-gradient rounded-2xl p-6 shadow-card border border-border/50">
-                <p className="text-muted-foreground">
-                  Gemini API key is configured. Enhanced analysis is available.
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </div>

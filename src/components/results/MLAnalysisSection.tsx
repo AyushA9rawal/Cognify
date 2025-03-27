@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CognitiveAnalysis from './CognitiveAnalysis';
 import ResponseTimeAnalysis from './ResponseTimeAnalysis';
 import Recommendations from './Recommendations';
+import { geminiService } from '@/utils/geminiService';
+import { useToast } from '@/hooks/use-toast';
 
 interface MLAnalysisSectionProps {
   mlAnalysis: any;
@@ -23,6 +25,44 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
   radarData, 
   responseTimeData 
 }) => {
+  const [geminiAnalysis, setGeminiAnalysis] = useState<string | null>(null);
+  const [isLoadingGemini, setIsLoadingGemini] = useState<boolean>(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // If mlAnalysis exists and Gemini has API key, fetch Gemini analysis
+    const fetchGeminiAnalysis = async () => {
+      if (!mlAnalysis || !geminiService.hasApiKey()) return;
+      
+      try {
+        setIsLoadingGemini(true);
+        
+        // Format responses for Gemini
+        const responses: Record<string, string> = {};
+        Object.entries(mlAnalysis.categoryScores).forEach(([category, score]) => {
+          responses[`${category} score`] = `${(Number(score) * 100).toFixed(0)}%`;
+        });
+        
+        // Add total score
+        responses["Overall cognitive assessment score"] = `${mlAnalysis.overallScore.toFixed(0)}%`;
+        
+        const analysis = await geminiService.analyzeResponses(responses);
+        setGeminiAnalysis(analysis);
+      } catch (error) {
+        console.error('Error fetching Gemini analysis:', error);
+        toast({
+          title: "Gemini Analysis Failed",
+          description: "Could not generate enhanced analysis. Using default analysis instead.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingGemini(false);
+      }
+    };
+    
+    fetchGeminiAnalysis();
+  }, [mlAnalysis, toast]);
+
   return (
     <div className="space-y-6 animate-slide-in" style={{ animationDelay: '200ms' }}>
       <h2 className="text-2xl font-medium">ML Model Analysis</h2>
@@ -39,6 +79,22 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
           <div className="space-y-8">
             <CognitiveAnalysis mlAnalysis={mlAnalysis} radarData={radarData} />
             <ResponseTimeAnalysis responseTimeData={responseTimeData} />
+            
+            {/* Enhanced Gemini Analysis */}
+            {isLoadingGemini ? (
+              <div className="mt-6 text-center py-4">
+                <LoadingSpinner size="sm" />
+                <p className="text-sm text-muted-foreground mt-2">Generating enhanced analysis...</p>
+              </div>
+            ) : geminiAnalysis ? (
+              <div className="mt-6 space-y-4">
+                <h3 className="text-xl font-medium">Enhanced Analysis</h3>
+                <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 whitespace-pre-line">
+                  {geminiAnalysis}
+                </div>
+              </div>
+            ) : null}
+            
             <Recommendations severity={mlAnalysis.severity} />
           </div>
         )}
