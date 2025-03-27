@@ -1,0 +1,96 @@
+
+// This is a simple service to integrate with Google's Gemini API
+
+interface GeminiConfig {
+  apiKey: string;
+  modelName: string;
+}
+
+class GeminiService {
+  private apiKey: string | null = null;
+  private modelName: string = 'gemini-pro';
+  private baseUrl: string = 'https://generativelanguage.googleapis.com/v1/models';
+  
+  constructor() {
+    // Try to get API key from localStorage if previously saved
+    this.apiKey = localStorage.getItem('gemini_api_key');
+  }
+  
+  setApiKey(key: string): void {
+    this.apiKey = key;
+    // Save to localStorage for persistence
+    localStorage.setItem('gemini_api_key', key);
+  }
+  
+  setModel(modelName: string): void {
+    this.modelName = modelName;
+  }
+  
+  getConfig(): GeminiConfig | null {
+    if (!this.apiKey) return null;
+    return {
+      apiKey: this.apiKey,
+      modelName: this.modelName
+    };
+  }
+  
+  hasApiKey(): boolean {
+    return this.apiKey !== null && this.apiKey.trim() !== '';
+  }
+  
+  async analyzeResponses(responses: Record<string, string>): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error('Gemini API key is not set');
+    }
+    
+    try {
+      const url = `${this.baseUrl}/${this.modelName}:generateContent?key=${this.apiKey}`;
+      
+      // Format responses for the prompt
+      const formattedResponses = Object.entries(responses)
+        .map(([question, answer]) => `Question: ${question}\nResponse: ${answer}`)
+        .join('\n\n');
+      
+      const prompt = `
+        You are an expert in cognitive assessments like the Mini-Mental State Examination (MMSE).
+        Please analyze the following responses from a cognitive assessment and provide:
+        1. A brief analysis of the patient's cognitive state
+        2. Areas of concern, if any
+        3. Recommendations for follow-up
+        
+        Patient Responses:
+        ${formattedResponses}
+      `;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Gemini API error: ${errorData.error?.message || 'Unknown error'}`);
+      }
+      
+      const data = await response.json();
+      return data.candidates[0].content.parts[0].text;
+    } catch (error) {
+      console.error('Error analyzing responses with Gemini:', error);
+      throw error;
+    }
+  }
+}
+
+// Create a singleton instance
+export const geminiService = new GeminiService();

@@ -1,3 +1,4 @@
+
 import * as tf from '@tensorflow/tfjs';
 
 interface ModelPrediction {
@@ -85,7 +86,15 @@ class MLService {
                           Object.values(answers.responseTimeMs).length;
     features.push(Math.min(avgResponseTime / 10000, 1)); // Normalize to 0-1 range, cap at 10 seconds
     
-    return tf.tensor2d([features]);
+    // Pad features to expected input shape of 28
+    // This fixes the "expected shape [null,28] but got array with shape [1,14]" error
+    const paddedFeatures = [...features];
+    while (paddedFeatures.length < 28) {
+      paddedFeatures.push(0); // Pad with zeros
+    }
+    
+    console.log("Feature length after padding:", paddedFeatures.length);
+    return tf.tensor2d([paddedFeatures]);
   }
   
   async analyzeMentalState(answers: AnswerFeatures): Promise<ModelPrediction> {
@@ -99,6 +108,7 @@ class MLService {
     try {
       // Extract features from answers
       const features = this.extractFeaturesFromAnswers(answers);
+      console.log("Input shape:", features.shape);
       
       // Make prediction with the model
       const rawPrediction = this.model!.predict(features) as tf.Tensor;
