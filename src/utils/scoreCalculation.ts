@@ -31,8 +31,22 @@ export const calculateScoreAnalysis = (
     };
   });
   
-  // Get interpretation based on updated thresholds
-  const { severity, interpretation, color } = interpretMMSEScore(totalScore);
+  // Determine severity based on user-specified thresholds
+  let severity, interpretation, color;
+  
+  if (percentageScore < 45) {
+    severity = "Severe";
+    interpretation = "Indicates severe cognitive impairment. Immediate medical consultation is recommended.";
+    color = "text-red-600";
+  } else if (percentageScore >= 45 && percentageScore < 75) {
+    severity = "Moderate";
+    interpretation = "Indicates moderate cognitive impairment. Follow-up with a healthcare provider is recommended.";
+    color = "text-orange-600";
+  } else {
+    severity = "Normal";
+    interpretation = "Cognitive function appears to be within normal parameters.";
+    color = "text-green-600";
+  }
   
   return {
     totalScore,

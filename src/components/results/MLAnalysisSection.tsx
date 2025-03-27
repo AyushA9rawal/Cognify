@@ -40,13 +40,23 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         // Format responses for Gemini
         const responses: Record<string, string> = {};
         Object.entries(mlAnalysis.categoryScores).forEach(([category, score]) => {
-          responses[`${category} score`] = `${(Number(score) * 100).toFixed(0)}%`;
+          // Make sure score is converted to a number before multiplying
+          const numericScore = typeof score === 'number' ? score : 
+                              typeof score === 'object' && score !== null ? 
+                              Number((score as any).percentage || 0) / 100 : 0;
+                              
+          responses[`${category} score`] = `${Math.round(numericScore * 100)}%`;
         });
         
         // Add total score
         const overallScoreValue = mlAnalysis.overallScore || 
           Math.round(Object.values(mlAnalysis.categoryScores)
-            .reduce((sum: number, score: any) => sum + (Number(score) * 100), 0) / 
+            .reduce((sum: number, score: any) => {
+              const numericScore = typeof score === 'number' ? score : 
+                                  typeof score === 'object' && score !== null ? 
+                                  Number((score as any).percentage || 0) / 100 : 0;
+              return sum + (numericScore * 100);
+            }, 0) / 
             Object.values(mlAnalysis.categoryScores).length);
             
         responses["Overall cognitive assessment score"] = `${overallScoreValue}%`;
