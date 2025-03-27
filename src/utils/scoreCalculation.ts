@@ -31,7 +31,7 @@ export const calculateScoreAnalysis = (
     };
   });
   
-  // Get interpretation
+  // Get interpretation based on updated thresholds
   const { severity, interpretation, color } = interpretMMSEScore(totalScore);
   
   return {

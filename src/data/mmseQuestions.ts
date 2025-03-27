@@ -1,3 +1,4 @@
+
 export interface MMSEOption {
   text: string;
   score: number;
@@ -125,17 +126,9 @@ export const mmseQuestions: MMSEQuestion[] = [
     type: "free-text",
     maxScore: 1,
     autoScore: true
-  },
-  
-  // Visuospatial
-  {
-    id: 10,
-    category: "Visuospatial",
-    text: "Can you draw interlocking pentagons?",
-    instructions: "Ask the patient to copy a drawing of two intersecting pentagons.",
-    type: "drawing",
-    maxScore: 1
   }
+  
+  // Visuospatial question (pentagon) has been removed as requested
 ];
 
 export const getMaxPossibleScore = (): number => {
@@ -168,19 +161,16 @@ export const interpretMMSEScore = (score: number): {
   interpretation: string;
   color: string;
 } => {
-  if (score >= 24) {
+  // Updated scoring thresholds as requested
+  const percentScore = (score / getMaxPossibleScore()) * 100;
+  
+  if (percentScore >= 75) {
     return {
       severity: "Normal",
       interpretation: "No cognitive impairment detected.",
       color: "text-green-600"
     };
-  } else if (score >= 19) {
-    return {
-      severity: "Mild",
-      interpretation: "Mild cognitive impairment detected.",
-      color: "text-yellow-600"
-    };
-  } else if (score >= 10) {
+  } else if (percentScore >= 45) {
     return {
       severity: "Moderate",
       interpretation: "Moderate cognitive impairment detected. Further evaluation is recommended.",

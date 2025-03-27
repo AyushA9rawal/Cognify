@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 
 interface ModelPrediction {
@@ -142,8 +141,8 @@ class MLService {
       features.dispose();
       rawPrediction.dispose();
       
-      // Map prediction to severity categories
-      const severityCategories = ['Normal', 'Mild', 'Moderate', 'Severe'];
+      // Map prediction to severity categories - updated to match new thresholds
+      const severityCategories = ['Normal', 'Moderate', 'Severe'];
       const predictionIndex = predictionArray[0].indexOf(Math.max(...predictionArray[0]));
       const confidence = predictionArray[0][predictionIndex];
       
@@ -175,22 +174,19 @@ class MLService {
     
     const percentageScore = totalMaxScore > 0 ? totalScore / totalMaxScore : 0;
     
-    // Determine severity based on percentage score
+    // Determine severity based on updated percentage thresholds
     let severityIndex: number;
     let severity: string;
     
     if (percentageScore >= 0.75) {
       severity = 'Normal';
       severityIndex = 0;
-    } else if (percentageScore >= 0.5) {
-      severity = 'Mild';
-      severityIndex = 1;
-    } else if (percentageScore >= 0.25) {
+    } else if (percentageScore >= 0.45) {
       severity = 'Moderate';
-      severityIndex = 2;
+      severityIndex = 1;
     } else {
       severity = 'Severe';
-      severityIndex = 3;
+      severityIndex = 2;
     }
     
     return {
@@ -201,12 +197,13 @@ class MLService {
   }
   
   private getCategoryScores(severityIndex: number): Record<string, number> {
+    // Updated to match the new scoring thresholds
     return {
       'Orientation': 0.85 - (severityIndex * 0.2),
       'Memory': 0.9 - (severityIndex * 0.25),
-      'Attention': 0.8 - (severityIndex * 0.18),
       'Language': 0.95 - (severityIndex * 0.22),
-      'Visuospatial': 0.75 - (severityIndex * 0.15)
+      'Attention': 0.8 - (severityIndex * 0.18)
+      // Removed Visuospatial category as the pentagon question was removed
     };
   }
   

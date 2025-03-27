@@ -44,7 +44,12 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         });
         
         // Add total score
-        responses["Overall cognitive assessment score"] = `${mlAnalysis.overallScore ? mlAnalysis.overallScore.toFixed(0) : Math.round(Object.values(mlAnalysis.categoryScores).reduce((sum: number, score: any) => sum + Number(score), 0) / Object.values(mlAnalysis.categoryScores).length * 100)}%`;
+        const overallScoreValue = mlAnalysis.overallScore || 
+          Math.round(Object.values(mlAnalysis.categoryScores)
+            .reduce((sum: number, score: any) => sum + (Number(score) * 100), 0) / 
+            Object.values(mlAnalysis.categoryScores).length);
+            
+        responses["Overall cognitive assessment score"] = `${overallScoreValue}%`;
         
         if (geminiService.hasApiKey()) {
           const analysis = await geminiService.analyzeResponses(responses);

@@ -70,6 +70,11 @@ class GeminiService {
         
         Patient Responses:
         ${formattedResponses}
+        
+        The score categorization is as follows:
+        - Less than 45%: Severe cognitive impairment
+        - 45% to 75%: Moderate cognitive impairment 
+        - Above 75%: Normal cognitive function
       `;
       
       const response = await fetch(url, {
