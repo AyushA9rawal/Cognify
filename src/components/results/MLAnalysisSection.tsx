@@ -32,7 +32,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
   useEffect(() => {
     // If mlAnalysis exists and Gemini has API key, fetch Gemini analysis
     const fetchGeminiAnalysis = async () => {
-      if (!mlAnalysis || !geminiService.hasApiKey()) return;
+      if (!mlAnalysis) return;
       
       try {
         setIsLoadingGemini(true);
@@ -44,17 +44,31 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         });
         
         // Add total score
-        responses["Overall cognitive assessment score"] = `${mlAnalysis.overallScore.toFixed(0)}%`;
+        responses["Overall cognitive assessment score"] = `${mlAnalysis.overallScore ? mlAnalysis.overallScore.toFixed(0) : Math.round(Object.values(mlAnalysis.categoryScores).reduce((sum: number, score: any) => sum + Number(score), 0) / Object.values(mlAnalysis.categoryScores).length * 100)}%`;
         
-        const analysis = await geminiService.analyzeResponses(responses);
-        setGeminiAnalysis(analysis);
+        if (geminiService.hasApiKey()) {
+          const analysis = await geminiService.analyzeResponses(responses);
+          setGeminiAnalysis(analysis);
+        } else {
+          // No API key, provide a default analysis
+          setGeminiAnalysis(
+            "Enhanced analysis requires a Gemini API key. The analysis would provide more detailed insights into cognitive patterns, areas of concern, and personalized recommendations based on the assessment results."
+          );
+        }
       } catch (error) {
         console.error('Error fetching Gemini analysis:', error);
         toast({
-          title: "Gemini Analysis Failed",
-          description: "Could not generate enhanced analysis. Using default analysis instead.",
-          variant: "destructive"
+          title: "Analysis Notice",
+          description: "Using standard analysis. For enhanced insights, update Gemini API key.",
+          variant: "default"
         });
+        
+        // Provide a fallback analysis
+        setGeminiAnalysis(
+          "Based on the assessment results, standard scoring suggests " + 
+          mlAnalysis.severity.toLowerCase() + 
+          " cognitive status. For personalized analysis, please ensure a valid Gemini API key is configured."
+        );
       } finally {
         setIsLoadingGemini(false);
       }

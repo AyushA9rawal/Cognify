@@ -1,3 +1,4 @@
+
 // This is a simple service to integrate with Google's Gemini API
 
 interface GeminiConfig {
@@ -34,7 +35,7 @@ class GeminiService {
   }
   
   getConfig(): GeminiConfig | null {
-    if (!this.apiKey || this.apiKey === "YOUR_GEMINI_API_KEY_HERE") return null;
+    if (!this.hasApiKey()) return null;
     return {
       apiKey: this.apiKey,
       modelName: this.modelName
@@ -42,12 +43,14 @@ class GeminiService {
   }
   
   hasApiKey(): boolean {
-    return this.apiKey !== null && this.apiKey !== "YOUR_GEMINI_API_KEY_HERE" && this.apiKey.trim() !== '';
+    return this.apiKey !== null && 
+           this.apiKey !== "YOUR_GEMINI_API_KEY_HERE" && 
+           this.apiKey.trim() !== '';
   }
   
   async analyzeResponses(responses: Record<string, string>): Promise<string> {
-    if (!this.apiKey) {
-      throw new Error('Gemini API key is not set');
+    if (!this.hasApiKey()) {
+      return "To enable enhanced AI analysis, please configure your Gemini API key.";
     }
     
     try {
@@ -94,7 +97,7 @@ class GeminiService {
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
       console.error('Error analyzing responses with Gemini:', error);
-      throw error;
+      return "Could not generate enhanced analysis. Using standard assessment results instead.";
     }
   }
 }
