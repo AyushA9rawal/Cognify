@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CognitiveAnalysis from './CognitiveAnalysis';
@@ -49,16 +50,20 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         
         // Add total score
         const overallScoreValue = mlAnalysis.overallScore || 
-          Math.round(Object.values(mlAnalysis.categoryScores)
-            .reduce((sum: number, score: any) => {
-              const numericScore = Number(
-                typeof score === 'number' ? score : 
-                typeof score === 'object' && score !== null ? 
-                (score as any).percentage || 0 : 0
-              ) / 100;
-              return sum + Math.round(numericScore * 100);
-            }, 0) / 
-            Object.values(mlAnalysis.categoryScores).length);
+          (Math.round(
+            Object.values(mlAnalysis.categoryScores)
+              .reduce((sum: number, score: any) => {
+                // Convert to number first, then do calculations
+                let scoreValue = 0;
+                if (typeof score === 'number') {
+                  scoreValue = score;
+                } else if (typeof score === 'object' && score !== null) {
+                  scoreValue = Number((score as any).percentage || 0) / 100;
+                }
+                return sum + Math.round(scoreValue * 100);
+              }, 0) 
+            / Object.values(mlAnalysis.categoryScores).length
+          ));
             
         responses["Overall cognitive assessment score"] = `${overallScoreValue}%`;
         
