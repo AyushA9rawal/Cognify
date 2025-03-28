@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CognitiveAnalysis from './CognitiveAnalysis';
@@ -52,9 +51,11 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         const overallScoreValue = mlAnalysis.overallScore || 
           Math.round(Object.values(mlAnalysis.categoryScores)
             .reduce((sum: number, score: any) => {
-              const numericScore = typeof score === 'number' ? score : 
-                                  typeof score === 'object' && score !== null ? 
-                                  Number((score as any).percentage || 0) / 100 : 0;
+              const numericScore = Number(
+                typeof score === 'number' ? score : 
+                typeof score === 'object' && score !== null ? 
+                (score as any).percentage || 0 : 0
+              ) / 100;
               return sum + Math.round(numericScore * 100);
             }, 0) / 
             Object.values(mlAnalysis.categoryScores).length);
