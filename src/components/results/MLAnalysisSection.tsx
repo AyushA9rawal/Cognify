@@ -55,7 +55,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
               const numericScore = typeof score === 'number' ? score : 
                                   typeof score === 'object' && score !== null ? 
                                   Number((score as any).percentage || 0) / 100 : 0;
-              return sum + (numericScore * 100);
+              return sum + Math.round(numericScore * 100);
             }, 0) / 
             Object.values(mlAnalysis.categoryScores).length);
             
