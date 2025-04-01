@@ -49,22 +49,24 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         });
         
         // Add total score - Fix the calculation to ensure we're working with numbers
-        const overallScoreValue = mlAnalysis.overallScore || 
-          (Object.values(mlAnalysis.categoryScores).length > 0 ? 
-            Math.round(
-              Object.values(mlAnalysis.categoryScores)
-                .reduce((sum: number, score: any) => {
-                  // Convert to number first, then do calculations
-                  let scoreValue = 0;
-                  if (typeof score === 'number') {
-                    scoreValue = score;
-                  } else if (typeof score === 'object' && score !== null) {
-                    scoreValue = Number((score as any).percentage || 0) / 100;
-                  }
-                  return sum + scoreValue;
-                }, 0) * 100 
-              / Object.values(mlAnalysis.categoryScores).length
-            ) : 0);
+        let overallScoreValue = 0;
+        if (mlAnalysis.overallScore) {
+          overallScoreValue = mlAnalysis.overallScore;
+        } else if (Object.values(mlAnalysis.categoryScores).length > 0) {
+          const sum = Object.values(mlAnalysis.categoryScores)
+            .reduce((sum: number, score: any) => {
+              // Convert to number first, then do calculations
+              let scoreValue = 0;
+              if (typeof score === 'number') {
+                scoreValue = score;
+              } else if (typeof score === 'object' && score !== null) {
+                scoreValue = Number((score as any).percentage || 0) / 100;
+              }
+              return sum + scoreValue;
+            }, 0);
+          
+          overallScoreValue = Math.round((sum * 100) / Object.values(mlAnalysis.categoryScores).length);
+        }
             
         responses["Overall cognitive assessment score"] = `${overallScoreValue}%`;
         

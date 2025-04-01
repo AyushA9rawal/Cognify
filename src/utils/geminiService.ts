@@ -1,4 +1,3 @@
-
 // This is a simple service to integrate with Google's Gemini API
 
 interface GeminiConfig {
@@ -6,7 +5,8 @@ interface GeminiConfig {
   modelName: string;
 }
 
-// Replace this with your actual Gemini API key
+// *** PUT YOUR API KEY RIGHT HERE ***
+// Replace "YOUR_GEMINI_API_KEY_HERE" with your actual Gemini API key
 const GEMINI_KEY = "YOUR_GEMINI_API_KEY_HERE";
 
 class GeminiService {
