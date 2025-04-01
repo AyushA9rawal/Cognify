@@ -14,6 +14,7 @@ export interface MMSEQuestion {
   maxScore: number;
   autoScore?: boolean; // Indicates if this question should be auto-scored by ML
   expectedAnswers?: string[]; // Expected answers for automatic evaluation
+  validationFunction?: (answer: string) => boolean; // Custom validation function
   image?: string; // Optional image to display with the question
 }
 
@@ -25,7 +26,28 @@ export const mmseQuestions: MMSEQuestion[] = [
     text: "What is today's date?",
     type: "free-text",
     maxScore: 1,
-    autoScore: true
+    autoScore: true,
+    validationFunction: (answer: string) => {
+      // Get today's date
+      const today = new Date();
+      const day = today.getDate();
+      const month = today.getMonth() + 1; // 0-indexed
+      const monthName = today.toLocaleString('default', { month: 'long' }).toLowerCase();
+      const shortMonthName = today.toLocaleString('default', { month: 'short' }).toLowerCase().replace('.', '');
+      const year = today.getFullYear();
+      
+      // Convert answer to lowercase for case-insensitive matching
+      const lowerAnswer = answer.toLowerCase().trim();
+      
+      // Check common date formats
+      // Format: 1 April 2025 or April 1 2025
+      const monthDayYearRegex = new RegExp(`(${day}\\s+${monthName}\\s+${year})|(${monthName}\\s+${day}\\s+${year})|(${day}\\s+${shortMonthName}\\s+${year})|(${shortMonthName}\\s+${day}\\s+${year})`, 'i');
+      
+      // Format: 01/04/2025 or 1/4/2025 or 01-04-2025 or 1-4-2025
+      const numericDateRegex = new RegExp(`(0?${day}[\\/\\-\\.](0?${month})[\\/\\-\\.]${year})|(${year}[\\/\\-\\.](0?${month})[\\/\\-\\.]0?${day})`, 'i');
+      
+      return monthDayYearRegex.test(lowerAnswer) || numericDateRegex.test(lowerAnswer);
+    }
   },
   
   // Orientation to Place
@@ -36,7 +58,17 @@ export const mmseQuestions: MMSEQuestion[] = [
     type: "free-text",
     maxScore: 1,
     autoScore: true,
-    expectedAnswers: ["Hospital", "Clinic", "Doctor's office"]
+    validationFunction: (answer: string) => {
+      const lowerAnswer = answer.toLowerCase().trim();
+      const validPlaces = [
+        "hospital", "clinic", "doctor", "office", "medical", "healthcare", 
+        "health center", "examination room", "emergency room", "er", 
+        "waiting room", "physician", "consultation", "outpatient", "inpatient"
+      ];
+      
+      return validPlaces.some(place => lowerAnswer.includes(place));
+    },
+    expectedAnswers: ["Hospital", "Clinic", "Doctor's office", "Medical facility"]
   },
   
   // Registration
@@ -63,6 +95,10 @@ export const mmseQuestions: MMSEQuestion[] = [
     type: "free-text",
     maxScore: 1,
     autoScore: true,
+    validationFunction: (answer: string) => {
+      const numAnswer = parseInt(answer.trim());
+      return numAnswer === 93;
+    },
     expectedAnswers: ["93"]
   },
   
@@ -73,7 +109,14 @@ export const mmseQuestions: MMSEQuestion[] = [
     text: "What is the name of the current President?",
     type: "free-text",
     maxScore: 1,
-    autoScore: true
+    autoScore: true,
+    validationFunction: (answer: string) => {
+      const lowerAnswer = answer.toLowerCase().trim();
+      const validAnswers = ["donald trump", "trump", "donald j trump", "donald john trump", "president trump"];
+      
+      return validAnswers.some(validAnswer => lowerAnswer.includes(validAnswer));
+    },
+    expectedAnswers: ["Donald Trump", "Trump"]
   },
   
   // Attention
@@ -85,6 +128,10 @@ export const mmseQuestions: MMSEQuestion[] = [
     type: "free-text",
     maxScore: 1,
     autoScore: true,
+    validationFunction: (answer: string) => {
+      const cleanAnswer = answer.trim().toUpperCase();
+      return cleanAnswer === "DLROW";
+    },
     expectedAnswers: ["DLROW", "dlrow"]
   },
   
@@ -97,8 +144,14 @@ export const mmseQuestions: MMSEQuestion[] = [
     type: "free-text",
     maxScore: 1,
     autoScore: true,
+    validationFunction: (answer: string) => {
+      const lowerAnswer = answer.toLowerCase().trim();
+      const validAnswers = ["watch", "wristwatch", "timepiece", "clock"];
+      
+      return validAnswers.some(validAnswer => lowerAnswer.includes(validAnswer));
+    },
     expectedAnswers: ["Watch", "Wristwatch", "Clock"],
-    image: "/images/custom-watch.jpg" // UPDATE THIS PATH to your custom watch image
+    image: "/images/custom-watch.jpg" // Remember to add this image to public/images/
   },
   
   // Recall
@@ -125,10 +178,26 @@ export const mmseQuestions: MMSEQuestion[] = [
     instructions: "The sentence should contain a subject and a verb and make sense.",
     type: "free-text",
     maxScore: 1,
-    autoScore: true
+    autoScore: true,
+    validationFunction: (answer: string) => {
+      if (!answer || answer.trim().length < 3) return false;
+      
+      const trimmedAnswer = answer.trim();
+      // Check if the sentence has basic structure (at least one space indicating multiple words)
+      if (!trimmedAnswer.includes(' ')) return false;
+      
+      // Check if sentence has a capital letter at the beginning and punctuation at the end
+      const startsWithCapital = /^[A-Z]/.test(trimmedAnswer);
+      const endsWithPunctuation = /[.!?]$/.test(trimmedAnswer);
+      
+      // Check for a basic subject-verb structure
+      // This is simplified - a real implementation would use NLP
+      const words = trimmedAnswer.split(/\s+/);
+      const hasSubjectAndVerb = words.length >= 2;
+      
+      return hasSubjectAndVerb && (startsWithCapital || endsWithPunctuation);
+    }
   }
-  
-  // Visuospatial question (pentagon) has been removed as requested
 ];
 
 export const getMaxPossibleScore = (): number => {

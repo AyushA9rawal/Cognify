@@ -45,9 +45,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     if (textAnswer.trim()) {
       const responseTime = Date.now() - timerStart.current;
       
-      // Use ML service to analyze text response
+      // Use custom validation function if available
       let score = -1;
-      if (question.autoScore) {
+      if (question.validationFunction) {
+        score = question.validationFunction(textAnswer) ? question.maxScore : 0;
+      } 
+      // Fall back to ML service if validation function not available
+      else if (question.autoScore) {
         score = mlService.analyzeTextResponse(textAnswer, question.category);
         score = Math.round(score * question.maxScore);
       }

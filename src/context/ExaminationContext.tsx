@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { mmseQuestions, getMaxPossibleScore } from '@/data/mmseQuestions';
 import { mlService, AnswerFeatures } from '@/utils/mlService';
@@ -88,15 +87,18 @@ export const ExaminationProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
   
   const setAnswer = (questionId: number, score: number, answer: string, responseTimeMs: number) => {
-    // For auto-scored questions where score is deferred (-1), evaluate using ML service
+    // For auto-scored questions where score is deferred (-1), evaluate using validation function or ML service
     const question = mmseQuestions.find(q => q.id === questionId);
     
     if (score === -1 && question) {
-      if (question.autoScore) {
+      if (question.validationFunction) {
+        // Use custom validation function
+        score = question.validationFunction(answer) ? question.maxScore : 0;
+      } else if (question.autoScore) {
         // Use ML service to score the response
         score = mlService.analyzeTextResponse(answer, question.category);
         score = Math.round(score * question.maxScore);
-      } else if (question.id === 18) { // Write a sentence question
+      } else if (question.id === 9) { // Write a sentence question
         // Simple evaluation for sentence question - if it has subject and verb, give 1 point
         const hasSentenceStructure = answer.trim().split(' ').length >= 2;
         score = hasSentenceStructure ? 1 : 0;
