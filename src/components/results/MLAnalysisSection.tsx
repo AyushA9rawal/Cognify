@@ -51,7 +51,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         // Add total score - Fix the calculation to ensure we're working with numbers
         let overallScoreValue = 0;
         if (mlAnalysis.overallScore) {
-          overallScoreValue = mlAnalysis.overallScore;
+          overallScoreValue = Number(mlAnalysis.overallScore);
         } else if (Object.values(mlAnalysis.categoryScores).length > 0) {
           const sum = Object.values(mlAnalysis.categoryScores)
             .reduce((sum: number, score: any) => {
@@ -65,16 +65,23 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
               return sum + scoreValue;
             }, 0);
           
-          overallScoreValue = Math.round((sum * 100) / Object.values(mlAnalysis.categoryScores).length);
+          // Ensure we're working with numbers by explicitly converting
+          const categoryCount = Object.values(mlAnalysis.categoryScores).length;
+          overallScoreValue = Math.round((Number(sum) * 100) / categoryCount);
         }
             
         responses["Overall cognitive assessment score"] = `${overallScoreValue}%`;
         
+        console.log("Has API key:", geminiService.hasApiKey());
+        console.log("Formatted responses for Gemini:", responses);
+        
         if (geminiService.hasApiKey()) {
           const analysis = await geminiService.analyzeResponses(responses);
+          console.log("Gemini analysis result:", analysis);
           setGeminiAnalysis(analysis);
         } else {
           // No API key, provide a default analysis
+          console.log("No Gemini API key available");
           setGeminiAnalysis(
             "Enhanced analysis requires a Gemini API key. The analysis would provide more detailed insights into cognitive patterns, areas of concern, and personalized recommendations based on the assessment results."
           );

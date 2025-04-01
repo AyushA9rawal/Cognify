@@ -1,3 +1,4 @@
+
 // This is a simple service to integrate with Google's Gemini API
 
 interface GeminiConfig {
@@ -22,12 +23,14 @@ class GeminiService {
         this.apiKey = storedKey;
       }
     }
+    console.log("GeminiService initialized with API key:", this.hasApiKey() ? "Valid key present" : "No valid key");
   }
   
   setApiKey(key: string): void {
     this.apiKey = key;
     // Save to localStorage for persistence
     localStorage.setItem('gemini_api_key', key);
+    console.log("API key set successfully");
   }
   
   setModel(modelName: string): void {
@@ -50,10 +53,12 @@ class GeminiService {
   
   async analyzeResponses(responses: Record<string, string>): Promise<string> {
     if (!this.hasApiKey()) {
+      console.log("No Gemini API key available for analysis");
       return "To enable enhanced AI analysis, please configure your Gemini API key.";
     }
     
     try {
+      console.log("Attempting to analyze responses with Gemini");
       const url = `${this.baseUrl}/${this.modelName}:generateContent?key=${this.apiKey}`;
       
       // Format responses for the prompt
@@ -77,6 +82,7 @@ class GeminiService {
         - Above 75%: Normal cognitive function
       `;
       
+      console.log("Sending request to Gemini API");
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -95,10 +101,12 @@ class GeminiService {
       
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Gemini API error response:", errorData);
         throw new Error(`Gemini API error: ${errorData.error?.message || 'Unknown error'}`);
       }
       
       const data = await response.json();
+      console.log("Received successful response from Gemini API");
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
       console.error('Error analyzing responses with Gemini:', error);
