@@ -21,16 +21,22 @@ class GeminiService {
       const storedKey = localStorage.getItem('gemini_api_key');
       if (storedKey) {
         this.apiKey = storedKey;
+        console.log("Retrieved API key from localStorage");
       }
     }
-    console.log("GeminiService initialized with API key:", this.hasApiKey() ? "Valid key present" : "No valid key");
+    console.log("GeminiService initialized with API key status:", this.hasApiKey() ? "Valid key present" : "No valid key");
   }
   
   setApiKey(key: string): void {
-    this.apiKey = key;
+    if (!key || key.trim() === '') {
+      console.error("Attempted to set empty API key");
+      return;
+    }
+    
+    this.apiKey = key.trim();
     // Save to localStorage for persistence
-    localStorage.setItem('gemini_api_key', key);
-    console.log("API key set successfully");
+    localStorage.setItem('gemini_api_key', this.apiKey);
+    console.log("API key set and saved to localStorage");
   }
   
   setModel(modelName: string): void {
@@ -47,13 +53,14 @@ class GeminiService {
   
   hasApiKey(): boolean {
     return this.apiKey !== null && 
+           this.apiKey !== undefined &&
            this.apiKey !== "YOUR_GEMINI_API_KEY_HERE" && 
            this.apiKey.trim() !== '';
   }
   
   async analyzeResponses(responses: Record<string, string>): Promise<string> {
     if (!this.hasApiKey()) {
-      console.log("No Gemini API key available for analysis");
+      console.warn("No Gemini API key available for analysis");
       return "To enable enhanced AI analysis, please configure your Gemini API key.";
     }
     
@@ -82,7 +89,7 @@ class GeminiService {
         - Above 75%: Normal cognitive function
       `;
       
-      console.log("Sending request to Gemini API");
+      console.log("Sending request to Gemini API with key", this.apiKey.substring(0, 3) + "..." + this.apiKey.substring(this.apiKey.length - 3));
       const response = await fetch(url, {
         method: 'POST',
         headers: {

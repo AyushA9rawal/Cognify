@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExamination } from '@/context/ExaminationContext';
 import { calculateScoreAnalysis } from '@/utils/scoreCalculation';
@@ -10,9 +10,12 @@ import ResultsHeader from '@/components/results/ResultsHeader';
 import ScoreOverview from '@/components/results/ScoreOverview';
 import CategoryBreakdown from '@/components/results/CategoryBreakdown';
 import MLAnalysisSection from '@/components/results/MLAnalysisSection';
+import ApiKeySetup from '@/components/ApiKeySetup';
+import { Button } from '@/components/ui/button';
 
 const Results = () => {
   const navigate = useNavigate();
+  const [showApiKeySetup, setShowApiKeySetup] = useState(false);
   const {
     answers,
     answerDetails,
@@ -90,6 +93,19 @@ const Results = () => {
             radarData={radarData}
             responseTimeData={responseTimeData}
           />
+          
+          {showApiKeySetup ? (
+            <ApiKeySetup onApiKeySet={() => setShowApiKeySetup(false)} />
+          ) : (
+            <div className="flex justify-center mt-8">
+              <Button 
+                variant="outline"
+                onClick={() => setShowApiKeySetup(true)}
+              >
+                Configure Gemini API Key
+              </Button>
+            </div>
+          )}
         </div>
       </main>
     </div>
