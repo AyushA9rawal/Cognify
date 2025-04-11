@@ -182,7 +182,7 @@ const Examination = () => {
           <div className="w-full space-y-8">
             <div className="text-center mb-8">
               <h1 className="text-2xl md:text-3xl font-bold mb-2">Mini Mental State Examination</h1>
-              <p className="text-muted-foreground">Answer each question to the best of your ability</p>
+              <p className="text-muted-foreground">Answer each question by typing or speaking your response</p>
             </div>
             
             <ProgressIndicator 
@@ -228,6 +228,11 @@ const Examination = () => {
             
             <div className="text-center mt-6 text-sm text-muted-foreground">
               Question {currentQuestionIndex + 1} of {mmseQuestions.length} | Current Score: {totalScore}
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-md text-sm">
+              <p className="font-medium">Voice Input Available!</p>
+              <p>Click the microphone icon to answer questions using your voice.</p>
             </div>
           </div>
         )}

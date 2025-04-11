@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { mmseQuestions, getMaxPossibleScore } from '@/data/mmseQuestions';
 import { mlService, AnswerFeatures } from '@/utils/mlService';
@@ -91,19 +92,26 @@ export const ExaminationProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const question = mmseQuestions.find(q => q.id === questionId);
     
     if (score === -1 && question) {
+      console.log(`Auto-scoring question ${questionId}: "${answer}"`);
       if (question.validationFunction) {
         // Use custom validation function
-        score = question.validationFunction(answer) ? question.maxScore : 0;
+        const isValid = question.validationFunction(answer);
+        score = isValid ? question.maxScore : 0;
+        console.log(`Validation function result: ${isValid ? 'Valid' : 'Invalid'} (score: ${score})`);
       } else if (question.autoScore) {
         // Use ML service to score the response
-        score = mlService.analyzeTextResponse(answer, question.category);
-        score = Math.round(score * question.maxScore);
+        const confidenceScore = mlService.analyzeTextResponse(answer, question.category);
+        score = Math.round(confidenceScore * question.maxScore);
+        console.log(`ML service result: confidence ${confidenceScore} (score: ${score})`);
       } else if (question.id === 9) { // Write a sentence question
-        // Simple evaluation for sentence question - if it has subject and verb, give 1 point
+        // Simple evaluation for sentence question
         const hasSentenceStructure = answer.trim().split(' ').length >= 2;
         score = hasSentenceStructure ? 1 : 0;
+        console.log(`Sentence structure check: ${hasSentenceStructure ? 'Valid' : 'Invalid'} (score: ${score})`);
       }
     }
+    
+    console.log(`Setting answer for question ${questionId}:`, { score, answer: answer.substring(0, 30) + (answer.length > 30 ? '...' : '') });
     
     setAnswers(prev => ({ ...prev, [questionId]: score }));
     setAnswerDetails(prev => ({ 

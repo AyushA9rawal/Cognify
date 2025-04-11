@@ -106,6 +106,13 @@ const Results = () => {
               </Button>
             </div>
           )}
+          
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 shadow-sm">
+            <h3 className="text-yellow-800 font-medium mb-2">Voice Input Used</h3>
+            <p className="text-yellow-700 text-sm">
+              This assessment included voice input capability. Response times may vary based on speech recognition quality.
+            </p>
+          </div>
         </div>
       </main>
     </div>

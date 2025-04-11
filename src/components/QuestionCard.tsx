@@ -4,6 +4,10 @@ import { cn } from '@/lib/utils';
 import { MMSEQuestion } from '@/data/mmseQuestions';
 import { mlService } from '@/utils/mlService';
 import { Watch } from 'lucide-react';
+import VoiceInput from './VoiceInput';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface QuestionCardProps {
   question: MMSEQuestion;
@@ -19,12 +23,15 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [textAnswer, setTextAnswer] = useState<string>('');
   const [isTimerActive, setIsTimerActive] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const timerStart = useRef<number>(Date.now());
   
   // Start timer when question is shown
   useEffect(() => {
     timerStart.current = Date.now();
     setIsTimerActive(true);
+    setTextAnswer('');
+    setSelectedOption(null);
     
     return () => {
       setIsTimerActive(false);
@@ -58,6 +65,41 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       
       onAnswer(score, textAnswer, responseTime);
     }
+  };
+  
+  const handleVoiceInput = (transcript: string) => {
+    setTextAnswer(transcript);
+  };
+  
+  // Convert multiple-choice to text based
+  const renderQuestionInput = () => {
+    // For all question types, we'll use text input with voice control
+    return (
+      <div className="space-y-4">
+        <Textarea
+          value={textAnswer}
+          onChange={(e) => setTextAnswer(e.target.value)}
+          rows={4}
+          placeholder="Enter your answer here..."
+          className="w-full p-3 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none"
+        />
+        
+        <VoiceInput 
+          onTranscript={handleVoiceInput}
+          isListening={isListening}
+          setIsListening={setIsListening}
+          placeholder="Click the microphone to speak your answer..."
+        />
+        
+        <Button 
+          onClick={handleTextSubmit}
+          disabled={!textAnswer.trim()}
+          className="btn-primary w-full mt-2"
+        >
+          Submit Answer
+        </Button>
+      </div>
+    );
   };
   
   return (
@@ -98,71 +140,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         ) : null}
         
         <div className="space-y-4 pt-2">
-          {question.type === 'multiple-choice' && question.options && (
-            <div className="space-y-3">
-              {question.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleOptionSelect(index)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-lg border border-border/50 transition-all",
-                    "hover:border-primary/30 hover:bg-primary/5",
-                    selectedOption === index ? "border-primary bg-primary/10" : ""
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-5 h-5 rounded-full flex items-center justify-center border transition-colors",
-                      selectedOption === index 
-                        ? "border-primary bg-primary" 
-                        : "border-muted-foreground"
-                    )}>
-                      {selectedOption === index && (
-                        <div className="w-2 h-2 rounded-full bg-white" />
-                      )}
-                    </div>
-                    <span>{option.text}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-          
-          {question.type === 'free-text' && (
-            <div className="space-y-3">
-              <textarea
-                value={textAnswer}
-                onChange={(e) => setTextAnswer(e.target.value)}
-                rows={4}
-                placeholder="Enter your answer here..."
-                className="w-full p-3 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none"
-              />
-              <button 
-                onClick={handleTextSubmit}
-                disabled={!textAnswer.trim()}
-                className="btn-primary w-full mt-2"
-              >
-                Submit Answer
-              </button>
-            </div>
-          )}
-          
-          {question.type === 'drawing' && (
-            <div className="space-y-3">
-              <div className="border border-border rounded-lg p-4 bg-white aspect-square flex items-center justify-center">
-                <p className="text-muted-foreground">Drawing interface would be implemented here</p>
-              </div>
-              <button 
-                onClick={() => {
-                  const responseTime = Date.now() - timerStart.current;
-                  onAnswer(0, "Drawing submission", responseTime);
-                }}
-                className="btn-primary w-full mt-2"
-              >
-                Submit Drawing
-              </button>
-            </div>
-          )}
+          {renderQuestionInput()}
         </div>
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 export interface MMSEOption {
   text: string;
   score: number;
@@ -230,7 +229,6 @@ export const interpretMMSEScore = (score: number): {
   interpretation: string;
   color: string;
 } => {
-  // Updated scoring thresholds as requested
   const percentScore = (score / getMaxPossibleScore()) * 100;
   
   if (percentScore >= 75) {
