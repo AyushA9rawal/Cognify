@@ -6,7 +6,6 @@ import { mlService } from '@/utils/mlService';
 import { Watch } from 'lucide-react';
 import VoiceInput from './VoiceInput';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 interface QuestionCardProps {
@@ -20,10 +19,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   onAnswer,
   className
 }) => {
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [textAnswer, setTextAnswer] = useState<string>('');
   const [isTimerActive, setIsTimerActive] = useState(true);
   const [isListening, setIsListening] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const timerStart = useRef<number>(Date.now());
   
   // Start timer when question is shown
@@ -31,75 +30,28 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     timerStart.current = Date.now();
     setIsTimerActive(true);
     setTextAnswer('');
-    setSelectedOption(null);
+    setIsSubmitted(false);
     
     return () => {
       setIsTimerActive(false);
     };
   }, [question.id]);
   
-  const handleOptionSelect = (optionIndex: number) => {
-    setSelectedOption(optionIndex);
-    const option = question.options?.[optionIndex];
-    const responseTime = Date.now() - timerStart.current;
-    
-    if (option) {
-      onAnswer(option.score, option.text, responseTime);
-    }
-  };
-  
   const handleTextSubmit = () => {
     if (textAnswer.trim()) {
       const responseTime = Date.now() - timerStart.current;
       
-      // Use custom validation function if available
+      // Use -1 as a marker for answers that need to be evaluated
+      // The actual scoring will happen in the ExaminationContext
       let score = -1;
-      if (question.validationFunction) {
-        score = question.validationFunction(textAnswer) ? question.maxScore : 0;
-      } 
-      // Fall back to ML service if validation function not available
-      else if (question.autoScore) {
-        score = mlService.analyzeTextResponse(textAnswer, question.category);
-        score = Math.round(score * question.maxScore);
-      }
       
       onAnswer(score, textAnswer, responseTime);
+      setIsSubmitted(true);
     }
   };
   
   const handleVoiceInput = (transcript: string) => {
     setTextAnswer(transcript);
-  };
-  
-  // Convert multiple-choice to text based
-  const renderQuestionInput = () => {
-    // For all question types, we'll use text input with voice control
-    return (
-      <div className="space-y-4">
-        <Textarea
-          value={textAnswer}
-          onChange={(e) => setTextAnswer(e.target.value)}
-          rows={4}
-          placeholder="Enter your answer here..."
-          className="w-full p-3 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none"
-        />
-        
-        <VoiceInput 
-          onTranscript={handleVoiceInput}
-          isListening={isListening}
-          setIsListening={setIsListening}
-          placeholder="Click the microphone to speak your answer..."
-        />
-        
-        <Button 
-          onClick={handleTextSubmit}
-          disabled={!textAnswer.trim()}
-          className="btn-primary w-full mt-2"
-        >
-          Submit Answer
-        </Button>
-      </div>
-    );
   };
   
   return (
@@ -140,7 +92,37 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         ) : null}
         
         <div className="space-y-4 pt-2">
-          {renderQuestionInput()}
+          <div className="space-y-4">
+            <Textarea
+              value={textAnswer}
+              onChange={(e) => setTextAnswer(e.target.value)}
+              rows={4}
+              placeholder="Enter your answer here..."
+              className="w-full p-3 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none"
+            />
+            
+            <VoiceInput 
+              onTranscript={handleVoiceInput}
+              isListening={isListening}
+              setIsListening={setIsListening}
+              placeholder="Click the microphone to speak your answer..."
+            />
+            
+            <Button 
+              onClick={handleTextSubmit}
+              disabled={!textAnswer.trim() || isSubmitted}
+              className="btn-primary w-full mt-2"
+            >
+              {isSubmitted ? "Answer Submitted" : "Submit Answer"}
+            </Button>
+          </div>
+          
+          {question.expectedAnswers && question.expectedAnswers.length > 0 && (
+            <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-md text-sm">
+              <p className="font-medium">Expected response format:</p>
+              <p>{question.expectedAnswers.join(' or ')}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

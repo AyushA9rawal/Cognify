@@ -1,3 +1,4 @@
+
 export interface MMSEOption {
   text: string;
   score: number;
@@ -16,6 +17,33 @@ export interface MMSEQuestion {
   validationFunction?: (answer: string) => boolean; // Custom validation function
   image?: string; // Optional image to display with the question
 }
+
+// Helper function to check for similarity between strings (allows for minor typos)
+const isStringSimilar = (input: string, target: string, allowedDistance = 2): boolean => {
+  // Convert both strings to lowercase and trim whitespace
+  const str1 = input.toLowerCase().trim();
+  const str2 = target.toLowerCase().trim();
+  
+  // If strings are identical, return true
+  if (str1 === str2) return true;
+  
+  // If difference in length is more than allowed distance, strings are too different
+  if (Math.abs(str1.length - str2.length) > allowedDistance) return false;
+  
+  // Count character differences (very simple Levenshtein distance implementation)
+  let differences = 0;
+  for (let i = 0; i < Math.max(str1.length, str2.length); i++) {
+    if (str1[i] !== str2[i]) differences++;
+    if (differences > allowedDistance) return false;
+  }
+  
+  return true;
+};
+
+// Helper function to check if any of the target strings match the input with allowed typos
+const matchesAnyWithTolerance = (input: string, targets: string[], allowedDistance = 2): boolean => {
+  return targets.some(target => isStringSimilar(input, target, allowedDistance));
+};
 
 export const mmseQuestions: MMSEQuestion[] = [
   // Orientation to Time
@@ -38,14 +66,19 @@ export const mmseQuestions: MMSEQuestion[] = [
       // Convert answer to lowercase for case-insensitive matching
       const lowerAnswer = answer.toLowerCase().trim();
       
-      // Check common date formats
+      // Check common date formats with tolerance for minor errors
       // Format: 1 April 2025 or April 1 2025
       const monthDayYearRegex = new RegExp(`(${day}\\s+${monthName}\\s+${year})|(${monthName}\\s+${day}\\s+${year})|(${day}\\s+${shortMonthName}\\s+${year})|(${shortMonthName}\\s+${day}\\s+${year})`, 'i');
       
       // Format: 01/04/2025 or 1/4/2025 or 01-04-2025 or 1-4-2025
       const numericDateRegex = new RegExp(`(0?${day}[\\/\\-\\.](0?${month})[\\/\\-\\.]${year})|(${year}[\\/\\-\\.](0?${month})[\\/\\-\\.]0?${day})`, 'i');
       
-      return monthDayYearRegex.test(lowerAnswer) || numericDateRegex.test(lowerAnswer);
+      // Check for variants like "today", "current date", etc.
+      const generalDateTerms = ["today", "current date", "today's date", "present day", `${monthName} ${day}`, `${day} ${monthName}`];
+      
+      return monthDayYearRegex.test(lowerAnswer) || 
+             numericDateRegex.test(lowerAnswer) || 
+             matchesAnyWithTolerance(lowerAnswer, generalDateTerms);
     }
   },
   
@@ -62,9 +95,11 @@ export const mmseQuestions: MMSEQuestion[] = [
       const validPlaces = [
         "hospital", "clinic", "doctor", "office", "medical", "healthcare", 
         "health center", "examination room", "emergency room", "er", 
-        "waiting room", "physician", "consultation", "outpatient", "inpatient"
+        "waiting room", "physician", "consultation", "outpatient", "inpatient",
+        "medical center", "exam room", "doctor's", "assessment room", "testing facility"
       ];
       
+      // More flexible matching - check if any valid place term is contained within the answer
       return validPlaces.some(place => lowerAnswer.includes(place));
     },
     expectedAnswers: ["Hospital", "Clinic", "Doctor's office", "Medical facility"]
@@ -74,16 +109,30 @@ export const mmseQuestions: MMSEQuestion[] = [
   {
     id: 3,
     category: "Registration",
-    text: "Can you repeat the words: 'apple, table, penny'?",
-    instructions: "Score based on first attempt.",
-    type: "multiple-choice",
-    options: [
-      { text: "All 3 words repeated correctly", score: 3 },
-      { text: "2 words repeated correctly", score: 2 },
-      { text: "1 word repeated correctly", score: 1 },
-      { text: "0 words repeated correctly", score: 0 }
-    ],
-    maxScore: 3
+    text: "Repeat the words: 'apple, table, penny'",
+    instructions: "Please say all three words clearly.",
+    type: "free-text",
+    maxScore: 3,
+    autoScore: true,
+    validationFunction: (answer: string) => {
+      const lowerAnswer = answer.toLowerCase().trim();
+      const targetWords = ["apple", "table", "penny"];
+      
+      let score = 0;
+      targetWords.forEach(word => {
+        // Check if the word or similar variation is in the answer
+        if (lowerAnswer.includes(word) || 
+            matchesAnyWithTolerance(lowerAnswer, [word]) ||
+            // Check for word boundaries to avoid partial matches
+            new RegExp(`\\b${word}\\b`, 'i').test(lowerAnswer)) {
+          score++;
+        }
+      });
+      
+      // Return true for full score, the actual score will be calculated in setAnswer
+      return score === 3;
+    },
+    expectedAnswers: ["Apple, table, penny", "Apple table penny"]
   },
   
   // Calculation
@@ -95,10 +144,17 @@ export const mmseQuestions: MMSEQuestion[] = [
     maxScore: 1,
     autoScore: true,
     validationFunction: (answer: string) => {
-      const numAnswer = parseInt(answer.trim());
-      return numAnswer === 93;
+      // Clean the answer - remove non-numeric characters except for negative sign
+      const cleanedAnswer = answer.replace(/[^\d-]/g, '');
+      const numAnswer = parseInt(cleanedAnswer);
+      
+      // Check for exact match or spoken variants
+      return numAnswer === 93 || 
+             answer.toLowerCase().includes("ninety-three") || 
+             answer.toLowerCase().includes("ninety three") ||
+             matchesAnyWithTolerance(answer, ["93", "ninety-three", "ninety three"]);
     },
-    expectedAnswers: ["93"]
+    expectedAnswers: ["93", "Ninety-three", "Ninety three"]
   },
   
   // Current Events
@@ -113,9 +169,9 @@ export const mmseQuestions: MMSEQuestion[] = [
       const lowerAnswer = answer.toLowerCase().trim();
       const validAnswers = ["donald trump", "trump", "donald j trump", "donald john trump", "president trump"];
       
-      return validAnswers.some(validAnswer => lowerAnswer.includes(validAnswer));
+      return matchesAnyWithTolerance(lowerAnswer, validAnswers, 3);
     },
-    expectedAnswers: ["Donald Trump", "Trump"]
+    expectedAnswers: ["Donald Trump", "Trump", "President Trump"]
   },
   
   // Attention
@@ -123,15 +179,19 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 6,
     category: "Attention",
     text: "Can you spell 'WORLD' backward?",
-    instructions: "Enter the patient's response. The correct answer is 'DLROW'.",
+    instructions: "Please spell out the letters one by one.",
     type: "free-text",
     maxScore: 1,
     autoScore: true,
     validationFunction: (answer: string) => {
       const cleanAnswer = answer.trim().toUpperCase();
-      return cleanAnswer === "DLROW";
+      // Allow for potential speech recognition variations
+      return cleanAnswer === "DLROW" || 
+             answer.toLowerCase().includes("d l r o w") ||
+             answer.toLowerCase().includes("d.l.r.o.w") ||
+             matchesAnyWithTolerance(cleanAnswer, ["DLROW", "D L R O W", "D-L-R-O-W"], 2);
     },
-    expectedAnswers: ["DLROW", "dlrow"]
+    expectedAnswers: ["DLROW", "D L R O W", "D-L-R-O-W"]
   },
   
   // Object Recognition
@@ -139,15 +199,15 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 7,
     category: "Object Recognition",
     text: "What is this object called?",
-    instructions: "Show the patient a picture of a watch.",
+    instructions: "Identify the object shown in the image.",
     type: "free-text",
     maxScore: 1,
     autoScore: true,
     validationFunction: (answer: string) => {
       const lowerAnswer = answer.toLowerCase().trim();
-      const validAnswers = ["watch", "wristwatch", "timepiece", "clock"];
+      const validAnswers = ["watch", "wristwatch", "timepiece", "clock", "time", "wrist watch"];
       
-      return validAnswers.some(validAnswer => lowerAnswer.includes(validAnswer));
+      return matchesAnyWithTolerance(lowerAnswer, validAnswers, 2);
     },
     expectedAnswers: ["Watch", "Wristwatch", "Clock"],
     image: "/images/custom-watch.jpg" // Remember to add this image to public/images/
@@ -158,15 +218,28 @@ export const mmseQuestions: MMSEQuestion[] = [
     id: 8,
     category: "Recall",
     text: "Can you recall the three words I mentioned earlier?",
-    instructions: "The patient should recall 'apple, table, penny'.",
-    type: "multiple-choice",
-    options: [
-      { text: "All 3 words recalled correctly", score: 3 },
-      { text: "2 words recalled correctly", score: 2 },
-      { text: "1 word recalled correctly", score: 1 },
-      { text: "0 words recalled correctly", score: 0 }
-    ],
-    maxScore: 3
+    instructions: "Try to remember all three words: 'apple, table, penny'.",
+    type: "free-text",
+    maxScore: 3,
+    autoScore: true,
+    validationFunction: (answer: string) => {
+      const lowerAnswer = answer.toLowerCase().trim();
+      const targetWords = ["apple", "table", "penny"];
+      
+      let score = 0;
+      targetWords.forEach(word => {
+        // Check if the word or similar variation is in the answer
+        if (lowerAnswer.includes(word) || 
+            matchesAnyWithTolerance(lowerAnswer, [word]) ||
+            new RegExp(`\\b${word}\\b`, 'i').test(lowerAnswer)) {
+          score++;
+        }
+      });
+      
+      // Full credit requires all 3 words
+      return score === 3;
+    },
+    expectedAnswers: ["Apple, table, penny", "Apple table penny"]
   },
   
   // Language
@@ -185,16 +258,13 @@ export const mmseQuestions: MMSEQuestion[] = [
       // Check if the sentence has basic structure (at least one space indicating multiple words)
       if (!trimmedAnswer.includes(' ')) return false;
       
-      // Check if sentence has a capital letter at the beginning and punctuation at the end
-      const startsWithCapital = /^[A-Z]/.test(trimmedAnswer);
-      const endsWithPunctuation = /[.!?]$/.test(trimmedAnswer);
-      
-      // Check for a basic subject-verb structure
-      // This is simplified - a real implementation would use NLP
+      // Simple check - sentence must be at least 4 words long for spoken input
       const words = trimmedAnswer.split(/\s+/);
-      const hasSubjectAndVerb = words.length >= 2;
+      if (words.length < 3) return false;
       
-      return hasSubjectAndVerb && (startsWithCapital || endsWithPunctuation);
+      // Check for a basic subject-verb pattern (very simplified)
+      // This is a very basic heuristic - real NLP would be better
+      return true;
     }
   }
 ];

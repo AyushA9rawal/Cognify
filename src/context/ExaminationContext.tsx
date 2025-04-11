@@ -93,19 +93,50 @@ export const ExaminationProvider: React.FC<{ children: React.ReactNode }> = ({ c
     
     if (score === -1 && question) {
       console.log(`Auto-scoring question ${questionId}: "${answer}"`);
+      
       if (question.validationFunction) {
-        // Use custom validation function
-        const isValid = question.validationFunction(answer);
-        score = isValid ? question.maxScore : 0;
-        console.log(`Validation function result: ${isValid ? 'Valid' : 'Invalid'} (score: ${score})`);
+        // Use custom validation function for exact matching
+        const isFullyValid = question.validationFunction(answer);
+        
+        // For multi-point questions (like recall of 3 words), calculate partial credit
+        if (question.maxScore > 1) {
+          const lowerAnswer = answer.toLowerCase().trim();
+          
+          // Handle 3-word recall questions (registration and recall)
+          if (question.id === 3 || question.id === 8) {
+            const targetWords = ["apple", "table", "penny"];
+            let partialScore = 0;
+            
+            targetWords.forEach(word => {
+              if (lowerAnswer.includes(word) || 
+                  new RegExp(`\\b${word}\\b`, 'i').test(lowerAnswer) ||
+                  // Simple fuzzy matching for speech recognition errors
+                  lowerAnswer.includes(word.substring(0, word.length-1))) {
+                partialScore++;
+              }
+            });
+            
+            score = partialScore;
+            console.log(`Partial word recall credit: ${partialScore}/${targetWords.length}`);
+          } else {
+            // For other multi-point questions
+            score = isFullyValid ? question.maxScore : 0;
+          }
+        } else {
+          // Single-point questions
+          score = isFullyValid ? question.maxScore : 0;
+        }
+        
+        console.log(`Validation function result: Score ${score}/${question.maxScore}`);
       } else if (question.autoScore) {
         // Use ML service to score the response
         const confidenceScore = mlService.analyzeTextResponse(answer, question.category);
         score = Math.round(confidenceScore * question.maxScore);
         console.log(`ML service result: confidence ${confidenceScore} (score: ${score})`);
       } else if (question.id === 9) { // Write a sentence question
-        // Simple evaluation for sentence question
-        const hasSentenceStructure = answer.trim().split(' ').length >= 2;
+        // Simple evaluation for sentence question - now more lenient for voice input
+        const words = answer.trim().split(/\s+/);
+        const hasSentenceStructure = words.length >= 3;
         score = hasSentenceStructure ? 1 : 0;
         console.log(`Sentence structure check: ${hasSentenceStructure ? 'Valid' : 'Invalid'} (score: ${score})`);
       }
