@@ -22,11 +22,13 @@ class GeminiService {
   private loadApiKeyFromStorage(): void {
     try {
       const storedKey = localStorage.getItem(GEMINI_API_KEY_STORAGE);
-      if (storedKey && storedKey !== "YOUR_GEMINI_API_KEY_HERE") {
+      if (storedKey && storedKey !== "YOUR_GEMINI_API_KEY_HERE" && storedKey.trim() !== '') {
         this.apiKey = storedKey;
         console.log("GeminiService: API key loaded from localStorage");
       } else {
         console.log("GeminiService: No valid API key found in localStorage");
+        // Clear any invalid keys
+        localStorage.removeItem(GEMINI_API_KEY_STORAGE);
       }
     } catch (e) {
       console.error("Failed to load API key from localStorage:", e);

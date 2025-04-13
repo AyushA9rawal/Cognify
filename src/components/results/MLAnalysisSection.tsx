@@ -29,7 +29,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
 }) => {
   const [geminiAnalysis, setGeminiAnalysis] = useState<string | null>(null);
   const [isLoadingGemini, setIsLoadingGemini] = useState<boolean>(false);
-  const [showApiKeySetup, setShowApiKeySetup] = useState<boolean>(false);
+  const [showApiKeySetup, setShowApiKeySetup] = useState<boolean>(!geminiService.hasApiKey());
   const { toast } = useToast();
 
   // Function to fetch Gemini analysis
@@ -142,40 +142,50 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
             <CognitiveAnalysis mlAnalysis={mlAnalysis} radarData={radarData} />
             <ResponseTimeAnalysis responseTimeData={responseTimeData} />
             
-            {/* Enhanced Gemini Analysis */}
-            {isLoadingGemini ? (
-              <div className="mt-6 text-center py-4">
-                <LoadingSpinner size="sm" />
-                <p className="text-sm text-muted-foreground mt-2">Generating enhanced analysis...</p>
-              </div>
-            ) : geminiAnalysis ? (
-              <div className="mt-6 space-y-4">
+            {/* Gemini API Key Setup - Always show if no API key is configured */}
+            <div className="mt-6 space-y-4">
+              <div className="flex justify-between items-center">
                 <h3 className="text-xl font-medium">Enhanced Analysis</h3>
+                {!geminiService.hasApiKey() && !showApiKeySetup && (
+                  <Button 
+                    onClick={handleSetupApiKey}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Configure Gemini API Key
+                  </Button>
+                )}
+              </div>
+              
+              {/* API Key Setup Dialog */}
+              {showApiKeySetup ? (
+                <div className="mt-4">
+                  <ApiKeySetup onApiKeySet={handleApiKeySet} />
+                </div>
+              ) : isLoadingGemini ? (
+                <div className="text-center py-4">
+                  <LoadingSpinner size="sm" />
+                  <p className="text-sm text-muted-foreground mt-2">Generating enhanced analysis...</p>
+                </div>
+              ) : geminiAnalysis ? (
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 whitespace-pre-line">
                   {geminiAnalysis}
+                  
+                  {/* Show API key setup button if analysis implies no API key */}
+                  {geminiAnalysis.includes("requires a Gemini API key") && !showApiKeySetup && (
+                    <div className="mt-4 flex justify-center">
+                      <Button 
+                        onClick={handleSetupApiKey}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Configure Gemini API Key
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                
-                {/* Show API key setup button if analysis implies no API key */}
-                {geminiAnalysis.includes("requires a Gemini API key") && (
-                  <div className="mt-4 flex justify-center">
-                    <Button 
-                      onClick={handleSetupApiKey}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Configure Gemini API Key
-                    </Button>
-                  </div>
-                )}
-                
-                {/* API Key Setup Dialog */}
-                {showApiKeySetup && (
-                  <div className="mt-4">
-                    <ApiKeySetup onApiKeySet={handleApiKeySet} />
-                  </div>
-                )}
-              </div>
-            ) : null}
+              ) : null}
+            </div>
             
             <Recommendations severity={mlAnalysis.severity} />
           </div>
