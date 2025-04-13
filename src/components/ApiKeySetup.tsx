@@ -4,6 +4,7 @@ import { geminiService } from '@/utils/geminiService';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface ApiKeySetupProps {
   onApiKeySet?: () => void;
@@ -13,16 +14,22 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySet }) => {
   const [apiKey, setApiKey] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [hasStoredKey, setHasStoredKey] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
     // Check if there's already a key stored
-    const storedKey = localStorage.getItem('gemini_api_key');
-    setHasStoredKey(!!storedKey && storedKey.trim() !== '');
+    try {
+      const storedKey = localStorage.getItem('gemini_api_key');
+      setHasStoredKey(!!storedKey && storedKey.trim() !== '' && storedKey !== 'YOUR_GEMINI_API_KEY_HERE');
+    } catch (e) {
+      console.error("Error checking stored API key:", e);
+    }
   }, []);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!apiKey.trim()) {
       toast({
         title: "Error",
@@ -32,31 +39,54 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySet }) => {
       return;
     }
     
+    setIsValidating(true);
+    
     try {
-      geminiService.setApiKey(apiKey.trim());
-      toast({
-        title: "Success",
-        description: "API key saved successfully. The enhanced analysis will now be available."
-      });
-      setHasStoredKey(true);
-      if (onApiKeySet) onApiKeySet();
-      setApiKey('');
+      // Validate the API key before saving
+      const validationResult = await geminiService.testApiKey(apiKey.trim());
+      
+      if (validationResult.valid) {
+        geminiService.setApiKey(apiKey.trim());
+        toast({
+          title: "Success",
+          description: "API key verified and saved successfully. Enhanced analysis is now available."
+        });
+        setHasStoredKey(true);
+        if (onApiKeySet) onApiKeySet();
+        setApiKey('');
+      } else {
+        toast({
+          title: "Invalid API Key",
+          description: validationResult.message,
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save API key",
+        description: "Failed to validate API key. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsValidating(false);
     }
   };
   
   const handleClearKey = () => {
-    localStorage.removeItem('gemini_api_key');
-    setHasStoredKey(false);
-    toast({
-      title: "API Key Removed",
-      description: "Your Gemini API key has been removed"
-    });
+    try {
+      localStorage.removeItem('gemini_api_key');
+      setHasStoredKey(false);
+      toast({
+        title: "API Key Removed",
+        description: "Your Gemini API key has been removed"
+      });
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: "Failed to remove API key from storage",
+        variant: "destructive"
+      });
+    }
   };
   
   return (
@@ -99,11 +129,13 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySet }) => {
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Enter your Gemini API key"
                 className="w-full pr-10"
+                disabled={isValidating}
               />
               <button
                 type="button"
                 onClick={() => setIsVisible(!isVisible)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                disabled={isValidating}
               >
                 {isVisible ? "Hide" : "Show"}
               </button>
@@ -116,8 +148,15 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySet }) => {
           <Button
             type="submit"
             className="w-full"
+            disabled={isValidating}
           >
-            Save API Key
+            {isValidating ? (
+              <span className="flex items-center gap-2">
+                <LoadingSpinner size="sm" /> Validating...
+              </span>
+            ) : (
+              "Save & Validate API Key"
+            )}
           </Button>
         </form>
       )}
@@ -132,9 +171,10 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySet }) => {
         <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">Troubleshooting</h4>
         <ul className="text-xs text-amber-700 dark:text-amber-400 mt-1 list-disc pl-4 space-y-1">
           <li>Make sure your API key is valid and correctly entered</li>
-          <li>Check the browser console for any API errors</li>
           <li>Ensure your Gemini API key has access to the 'gemini-pro' model</li>
-          <li>Try clearing your browser cache if issues persist</li>
+          <li>API keys should start with "AIza..." and be about 39 characters long</li>
+          <li>Confirm you have billing set up in your Google AI Studio account</li>
+          <li>Check browser console for detailed error messages</li>
         </ul>
       </div>
     </div>

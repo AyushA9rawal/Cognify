@@ -6,6 +6,8 @@ import ResponseTimeAnalysis from './ResponseTimeAnalysis';
 import Recommendations from './Recommendations';
 import { geminiService } from '@/utils/geminiService';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import ApiKeySetup from '@/components/ApiKeySetup';
 
 interface MLAnalysisSectionProps {
   mlAnalysis: any;
@@ -27,86 +29,101 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
 }) => {
   const [geminiAnalysis, setGeminiAnalysis] = useState<string | null>(null);
   const [isLoadingGemini, setIsLoadingGemini] = useState<boolean>(false);
+  const [showApiKeySetup, setShowApiKeySetup] = useState<boolean>(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // If mlAnalysis exists and Gemini has API key, fetch Gemini analysis
-    const fetchGeminiAnalysis = async () => {
-      if (!mlAnalysis) return;
-      
-      try {
-        setIsLoadingGemini(true);
-        
-        // Format responses for Gemini
-        const responses: Record<string, string> = {};
-        Object.entries(mlAnalysis.categoryScores).forEach(([category, score]) => {
-          // Make sure score is converted to a number before multiplying
-          const numericScore = typeof score === 'number' ? score : 
-                              typeof score === 'object' && score !== null ? 
-                              Number((score as any).percentage || 0) / 100 : 0;
-                              
-          responses[`${category} score`] = `${Math.round(numericScore * 100)}%`;
-        });
-        
-        // Add total score - Fix the calculation to ensure we're working with numbers
-        let overallScoreValue = 0;
-        if (mlAnalysis.overallScore) {
-          overallScoreValue = Number(mlAnalysis.overallScore);
-        } else if (Object.values(mlAnalysis.categoryScores).length > 0) {
-          const sum = Object.values(mlAnalysis.categoryScores)
-            .reduce((sum: number, score: any) => {
-              // Convert to number first, then do calculations
-              let scoreValue = 0;
-              if (typeof score === 'number') {
-                scoreValue = score;
-              } else if (typeof score === 'object' && score !== null) {
-                scoreValue = Number((score as any).percentage || 0) / 100;
-              }
-              return sum + scoreValue;
-            }, 0);
-          
-          // Ensure we're working with numbers by explicitly converting
-          const categoryCount = Object.values(mlAnalysis.categoryScores).length;
-          overallScoreValue = Math.round((Number(sum) * 100) / categoryCount);
-        }
-            
-        responses["Overall cognitive assessment score"] = `${overallScoreValue}%`;
-        
-        console.log("Has API key:", geminiService.hasApiKey());
-        console.log("Formatted responses for Gemini:", responses);
-        
-        if (geminiService.hasApiKey()) {
-          const analysis = await geminiService.analyzeResponses(responses);
-          console.log("Gemini analysis result:", analysis);
-          setGeminiAnalysis(analysis);
-        } else {
-          // No API key, provide a default analysis
-          console.log("No Gemini API key available");
-          setGeminiAnalysis(
-            "Enhanced analysis requires a Gemini API key. The analysis would provide more detailed insights into cognitive patterns, areas of concern, and personalized recommendations based on the assessment results."
-          );
-        }
-      } catch (error) {
-        console.error('Error fetching Gemini analysis:', error);
-        toast({
-          title: "Analysis Notice",
-          description: "Using standard analysis. For enhanced insights, update Gemini API key.",
-          variant: "default"
-        });
-        
-        // Provide a fallback analysis
-        setGeminiAnalysis(
-          "Based on the assessment results, standard scoring suggests " + 
-          mlAnalysis.severity.toLowerCase() + 
-          " cognitive status. For personalized analysis, please ensure a valid Gemini API key is configured."
-        );
-      } finally {
-        setIsLoadingGemini(false);
-      }
-    };
+  // Function to fetch Gemini analysis
+  const fetchGeminiAnalysis = async () => {
+    if (!mlAnalysis) return;
     
+    try {
+      setIsLoadingGemini(true);
+      
+      // Format responses for Gemini
+      const responses: Record<string, string> = {};
+      Object.entries(mlAnalysis.categoryScores).forEach(([category, score]) => {
+        // Make sure score is converted to a number before multiplying
+        const numericScore = typeof score === 'number' ? score : 
+                            typeof score === 'object' && score !== null ? 
+                            Number((score as any).percentage || 0) / 100 : 0;
+                            
+        responses[`${category} score`] = `${Math.round(numericScore * 100)}%`;
+      });
+      
+      // Add total score - Fix the calculation to ensure we're working with numbers
+      let overallScoreValue = 0;
+      if (mlAnalysis.overallScore) {
+        overallScoreValue = Number(mlAnalysis.overallScore);
+      } else if (Object.values(mlAnalysis.categoryScores).length > 0) {
+        const sum = Object.values(mlAnalysis.categoryScores)
+          .reduce((sum: number, score: any) => {
+            // Convert to number first, then do calculations
+            let scoreValue = 0;
+            if (typeof score === 'number') {
+              scoreValue = score;
+            } else if (typeof score === 'object' && score !== null) {
+              scoreValue = Number((score as any).percentage || 0) / 100;
+            }
+            return sum + scoreValue;
+          }, 0);
+        
+        // Ensure we're working with numbers by explicitly converting
+        const categoryCount = Object.values(mlAnalysis.categoryScores).length;
+        overallScoreValue = Math.round((Number(sum) * 100) / categoryCount);
+      }
+          
+      responses["Overall cognitive assessment score"] = `${overallScoreValue}%`;
+      
+      console.log("Has API key:", geminiService.hasApiKey());
+      console.log("Formatted responses for Gemini:", responses);
+      
+      if (geminiService.hasApiKey()) {
+        const analysis = await geminiService.analyzeResponses(responses);
+        console.log("Gemini analysis result:", analysis);
+        setGeminiAnalysis(analysis);
+      } else {
+        // No API key, provide a default analysis message
+        console.log("No Gemini API key available");
+        setGeminiAnalysis(
+          "Enhanced analysis requires a Gemini API key. Configure your API key to access detailed cognitive insights."
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching Gemini analysis:', error);
+      toast({
+        title: "Analysis Error",
+        description: "Failed to get enhanced analysis. Please check your API key.",
+        variant: "destructive"
+      });
+      
+      // Provide a fallback analysis
+      setGeminiAnalysis(
+        "Based on the assessment results, standard scoring suggests " + 
+        mlAnalysis.severity.toLowerCase() + 
+        " cognitive status. For personalized analysis, please ensure a valid Gemini API key is configured."
+      );
+    } finally {
+      setIsLoadingGemini(false);
+    }
+  };
+
+  useEffect(() => {
     fetchGeminiAnalysis();
-  }, [mlAnalysis, toast]);
+  }, [mlAnalysis]);
+
+  const handleSetupApiKey = () => {
+    setShowApiKeySetup(true);
+  };
+
+  const handleApiKeySet = () => {
+    setShowApiKeySetup(false);
+    // Re-run the analysis after API key is set
+    fetchGeminiAnalysis();
+    toast({
+      title: "API Key Configured",
+      description: "Generating enhanced analysis with Gemini AI...",
+    });
+  };
 
   return (
     <div className="space-y-6 animate-slide-in" style={{ animationDelay: '200ms' }}>
@@ -137,6 +154,26 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 whitespace-pre-line">
                   {geminiAnalysis}
                 </div>
+                
+                {/* Show API key setup button if analysis implies no API key */}
+                {geminiAnalysis.includes("requires a Gemini API key") && (
+                  <div className="mt-4 flex justify-center">
+                    <Button 
+                      onClick={handleSetupApiKey}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Configure Gemini API Key
+                    </Button>
+                  </div>
+                )}
+                
+                {/* API Key Setup Dialog */}
+                {showApiKeySetup && (
+                  <div className="mt-4">
+                    <ApiKeySetup onApiKeySet={handleApiKeySet} />
+                  </div>
+                )}
               </div>
             ) : null}
             
