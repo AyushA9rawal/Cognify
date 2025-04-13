@@ -1,4 +1,3 @@
-
 export interface MMSEOption {
   text: string;
   score: number;
@@ -13,7 +12,6 @@ export interface MMSEQuestion {
   options?: MMSEOption[];
   maxScore: number;
   autoScore?: boolean; // Indicates if this question should be auto-scored by ML
-  expectedAnswers?: string[]; // Expected answers for automatic evaluation
   validationFunction?: (answer: string) => boolean; // Custom validation function
   image?: string; // Optional image to display with the question
 }
@@ -101,8 +99,7 @@ export const mmseQuestions: MMSEQuestion[] = [
       
       // More flexible matching - check if any valid place term is contained within the answer
       return validPlaces.some(place => lowerAnswer.includes(place));
-    },
-    expectedAnswers: ["Hospital", "Clinic", "Doctor's office", "Medical facility"]
+    }
   },
   
   // Registration
@@ -131,8 +128,7 @@ export const mmseQuestions: MMSEQuestion[] = [
       
       // Return true for full score, the actual score will be calculated in setAnswer
       return score === 3;
-    },
-    expectedAnswers: ["Apple, table, penny", "Apple table penny"]
+    }
   },
   
   // Calculation
@@ -153,8 +149,7 @@ export const mmseQuestions: MMSEQuestion[] = [
              answer.toLowerCase().includes("ninety-three") || 
              answer.toLowerCase().includes("ninety three") ||
              matchesAnyWithTolerance(answer, ["93", "ninety-three", "ninety three"]);
-    },
-    expectedAnswers: ["93", "Ninety-three", "Ninety three"]
+    }
   },
   
   // Current Events
@@ -170,8 +165,7 @@ export const mmseQuestions: MMSEQuestion[] = [
       const validAnswers = ["donald trump", "trump", "donald j trump", "donald john trump", "president trump"];
       
       return matchesAnyWithTolerance(lowerAnswer, validAnswers, 3);
-    },
-    expectedAnswers: ["Donald Trump", "Trump", "President Trump"]
+    }
   },
   
   // Attention
@@ -190,8 +184,7 @@ export const mmseQuestions: MMSEQuestion[] = [
              answer.toLowerCase().includes("d l r o w") ||
              answer.toLowerCase().includes("d.l.r.o.w") ||
              matchesAnyWithTolerance(cleanAnswer, ["DLROW", "D L R O W", "D-L-R-O-W"], 2);
-    },
-    expectedAnswers: ["DLROW", "D L R O W", "D-L-R-O-W"]
+    }
   },
   
   // Object Recognition
@@ -209,7 +202,6 @@ export const mmseQuestions: MMSEQuestion[] = [
       
       return matchesAnyWithTolerance(lowerAnswer, validAnswers, 2);
     },
-    expectedAnswers: ["Watch", "Wristwatch", "Clock"],
     image: "/images/custom-watch.jpg" // Remember to add this image to public/images/
   },
   
@@ -238,8 +230,7 @@ export const mmseQuestions: MMSEQuestion[] = [
       
       // Full credit requires all 3 words
       return score === 3;
-    },
-    expectedAnswers: ["Apple, table, penny", "Apple table penny"]
+    }
   },
   
   // Language

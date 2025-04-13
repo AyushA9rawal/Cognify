@@ -116,13 +116,6 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               {isSubmitted ? "Answer Submitted" : "Submit Answer"}
             </Button>
           </div>
-          
-          {question.expectedAnswers && question.expectedAnswers.length > 0 && (
-            <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-md text-sm">
-              <p className="font-medium">Expected response format:</p>
-              <p>{question.expectedAnswers.join(' or ')}</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
