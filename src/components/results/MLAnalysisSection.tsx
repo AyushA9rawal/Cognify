@@ -8,6 +8,7 @@ import { geminiService } from '@/utils/geminiService';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import ApiKeySetup from '@/components/ApiKeySetup';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface MLAnalysisSectionProps {
   mlAnalysis: any;
@@ -74,9 +75,6 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
           
       responses["Overall cognitive assessment score"] = `${overallScoreValue}%`;
       
-      console.log("Has API key:", geminiService.hasApiKey());
-      console.log("Formatted responses for Gemini:", responses);
-      
       if (geminiService.hasApiKey()) {
         const analysis = await geminiService.analyzeResponses(responses);
         console.log("Gemini analysis result:", analysis);
@@ -142,20 +140,31 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
             <CognitiveAnalysis mlAnalysis={mlAnalysis} radarData={radarData} />
             <ResponseTimeAnalysis responseTimeData={responseTimeData} />
             
-            {/* Gemini API Key Setup - Always show if no API key is configured */}
-            <div className="mt-6 space-y-4">
-              <div className="flex justify-between items-center">
+            {/* Enhanced Analysis Section with clearer Gemini API Key button */}
+            <div className="mt-8 border-t border-border/30 pt-8">
+              <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-medium">Enhanced Analysis</h3>
                 {!geminiService.hasApiKey() && !showApiKeySetup && (
                   <Button 
                     onClick={handleSetupApiKey}
-                    variant="outline"
+                    variant="default"
                     size="sm"
+                    className="bg-primary hover:bg-primary/90"
                   >
                     Configure Gemini API Key
                   </Button>
                 )}
               </div>
+              
+              {/* Always show API key setup prompt if no key is available */}
+              {!geminiService.hasApiKey() && !showApiKeySetup && (
+                <Alert className="mb-4 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                  <AlertTitle className="text-amber-800 dark:text-amber-300">API Key Required</AlertTitle>
+                  <AlertDescription className="text-amber-700 dark:text-amber-400">
+                    Enhanced AI analysis requires a Gemini API key. Click the "Configure Gemini API Key" button to set up your key.
+                  </AlertDescription>
+                </Alert>
+              )}
               
               {/* API Key Setup Dialog */}
               {showApiKeySetup ? (
@@ -176,8 +185,9 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
                     <div className="mt-4 flex justify-center">
                       <Button 
                         onClick={handleSetupApiKey}
-                        variant="outline"
+                        variant="default"
                         size="sm"
+                        className="bg-primary hover:bg-primary/90"
                       >
                         Configure Gemini API Key
                       </Button>

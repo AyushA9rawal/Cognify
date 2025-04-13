@@ -48,8 +48,8 @@ export const analyzeWithGemini = async (
       Format your response in paragraph form for the analysis, followed by a bulleted list of recommendations.
     `;
 
-    // Updated to use the v1beta endpoint
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+    // Updated to use the v1beta endpoint with gemini-1.5-pro model
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

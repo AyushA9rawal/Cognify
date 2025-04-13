@@ -11,8 +11,8 @@ const GEMINI_API_KEY_STORAGE = 'gemini_api_key';
 
 class GeminiService {
   private apiKey: string = '';
-  private modelName: string = 'gemini-pro';
-  private baseUrl: string = 'https://generativelanguage.googleapis.com/v1beta/models';
+  private modelName: string = 'gemini-1.5-pro'; // Updated to newer model name
+  private baseUrl: string = 'https://generativelanguage.googleapis.com/v1beta';
   
   constructor() {
     console.log("GeminiService initializing...");
@@ -75,8 +75,8 @@ class GeminiService {
   
   async testApiKey(key: string): Promise<{ valid: boolean, message: string }> {
     try {
-      // Updated to use the v1beta endpoint
-      const url = `${this.baseUrl}/${this.modelName}:generateContent?key=${key}`;
+      // Updated to use the v1beta endpoint with the new model name
+      const url = `${this.baseUrl}/models/${this.modelName}:generateContent?key=${key}`;
       
       const response = await fetch(url, {
         method: 'POST',
@@ -121,8 +121,8 @@ class GeminiService {
     
     try {
       console.log("GeminiService: Attempting to analyze responses with Gemini");
-      // Updated to use the v1beta endpoint
-      const url = `${this.baseUrl}/${this.modelName}:generateContent?key=${this.apiKey}`;
+      // Updated to use the newer model and correct endpoint path
+      const url = `${this.baseUrl}/models/${this.modelName}:generateContent?key=${this.apiKey}`;
       
       // Format responses for the prompt
       const formattedResponses = Object.entries(responses)
