@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CognitiveAnalysis from './CognitiveAnalysis';
@@ -9,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import ApiKeySetup from '@/components/ApiKeySetup';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+
+const DEFAULT_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
 
 interface MLAnalysisSectionProps {
   mlAnalysis: any;
@@ -30,20 +31,23 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
 }) => {
   const [geminiAnalysis, setGeminiAnalysis] = useState<string | null>(null);
   const [isLoadingGemini, setIsLoadingGemini] = useState<boolean>(false);
-  const [showApiKeySetup, setShowApiKeySetup] = useState<boolean>(!geminiService.hasApiKey());
+  const [showApiKeySetup, setShowApiKeySetup] = useState<boolean>(false);
   const { toast } = useToast();
 
-  // Function to fetch Gemini analysis
+  useEffect(() => {
+    if (DEFAULT_GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE") {
+      geminiService.setApiKey(DEFAULT_GEMINI_API_KEY);
+    }
+  }, []);
+
   const fetchGeminiAnalysis = async () => {
     if (!mlAnalysis) return;
     
     try {
       setIsLoadingGemini(true);
       
-      // Format responses for Gemini
       const responses: Record<string, string> = {};
       Object.entries(mlAnalysis.categoryScores).forEach(([category, score]) => {
-        // Make sure score is converted to a number before multiplying
         const numericScore = typeof score === 'number' ? score : 
                             typeof score === 'object' && score !== null ? 
                             Number((score as any).percentage || 0) / 100 : 0;
@@ -51,14 +55,12 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         responses[`${category} score`] = `${Math.round(numericScore * 100)}%`;
       });
       
-      // Add total score - Fix the calculation to ensure we're working with numbers
       let overallScoreValue = 0;
       if (mlAnalysis.overallScore) {
         overallScoreValue = Number(mlAnalysis.overallScore);
       } else if (Object.values(mlAnalysis.categoryScores).length > 0) {
         const sum = Object.values(mlAnalysis.categoryScores)
           .reduce((sum: number, score: any) => {
-            // Convert to number first, then do calculations
             let scoreValue = 0;
             if (typeof score === 'number') {
               scoreValue = score;
@@ -68,7 +70,6 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
             return sum + scoreValue;
           }, 0);
         
-        // Ensure we're working with numbers by explicitly converting
         const categoryCount = Object.values(mlAnalysis.categoryScores).length;
         overallScoreValue = Math.round((Number(sum) * 100) / categoryCount);
       }
@@ -80,7 +81,6 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
         console.log("Gemini analysis result:", analysis);
         setGeminiAnalysis(analysis);
       } else {
-        // No API key, provide a default analysis message
         console.log("No Gemini API key available");
         setGeminiAnalysis(
           "Enhanced analysis requires a Gemini API key. Configure your API key to access detailed cognitive insights."
@@ -90,15 +90,14 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
       console.error('Error fetching Gemini analysis:', error);
       toast({
         title: "Analysis Error",
-        description: "Failed to get enhanced analysis. Please check your API key.",
+        description: "Failed to get enhanced analysis.",
         variant: "destructive"
       });
       
-      // Provide a fallback analysis
       setGeminiAnalysis(
         "Based on the assessment results, standard scoring suggests " + 
         mlAnalysis.severity.toLowerCase() + 
-        " cognitive status. For personalized analysis, please ensure a valid Gemini API key is configured."
+        " cognitive status."
       );
     } finally {
       setIsLoadingGemini(false);
@@ -115,7 +114,6 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
 
   const handleApiKeySet = () => {
     setShowApiKeySetup(false);
-    // Re-run the analysis after API key is set
     fetchGeminiAnalysis();
     toast({
       title: "API Key Configured",
@@ -140,11 +138,10 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
             <CognitiveAnalysis mlAnalysis={mlAnalysis} radarData={radarData} />
             <ResponseTimeAnalysis responseTimeData={responseTimeData} />
             
-            {/* Enhanced Analysis Section with clearer Gemini API Key button */}
             <div className="mt-8 border-t border-border/30 pt-8">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-medium">Enhanced Analysis</h3>
-                {!geminiService.hasApiKey() && !showApiKeySetup && (
+                {(DEFAULT_GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE" && !geminiService.hasApiKey() && !showApiKeySetup) && (
                   <Button 
                     onClick={handleSetupApiKey}
                     variant="default"
@@ -156,8 +153,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
                 )}
               </div>
               
-              {/* Always show API key setup prompt if no key is available */}
-              {!geminiService.hasApiKey() && !showApiKeySetup && (
+              {(DEFAULT_GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE" && !geminiService.hasApiKey() && !showApiKeySetup) && (
                 <Alert className="mb-4 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
                   <AlertTitle className="text-amber-800 dark:text-amber-300">API Key Required</AlertTitle>
                   <AlertDescription className="text-amber-700 dark:text-amber-400">
@@ -166,7 +162,6 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
                 </Alert>
               )}
               
-              {/* API Key Setup Dialog */}
               {showApiKeySetup ? (
                 <div className="mt-4">
                   <ApiKeySetup onApiKeySet={handleApiKeySet} />
@@ -180,8 +175,9 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 whitespace-pre-line">
                   {geminiAnalysis}
                   
-                  {/* Show API key setup button if analysis implies no API key */}
-                  {geminiAnalysis.includes("requires a Gemini API key") && !showApiKeySetup && (
+                  {geminiAnalysis.includes("requires a Gemini API key") && 
+                   DEFAULT_GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE" && 
+                   !showApiKeySetup && (
                     <div className="mt-4 flex justify-center">
                       <Button 
                         onClick={handleSetupApiKey}

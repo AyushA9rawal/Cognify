@@ -6,20 +6,26 @@ export interface GeminiResponse {
   error: string | null;
 }
 
+// Default API key - replace with your actual Gemini API key
+const DEFAULT_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+
 export const analyzeWithGemini = async (
   score: number,
   maxScore: number,
   categoryScores: Record<string, { score: number, maxScore: number, percentage: number }>,
   patientInfo: { name: string, age: string, gender: string },
-  apiKey: string
+  apiKey?: string
 ): Promise<GeminiResponse> => {
   try {
-    if (!apiKey) {
+    // Use provided API key or fall back to default
+    const effectiveApiKey = (apiKey && apiKey.trim() !== '') ? apiKey : DEFAULT_GEMINI_API_KEY;
+    
+    if (effectiveApiKey === "YOUR_GEMINI_API_KEY_HERE" || effectiveApiKey.trim() === '') {
       return {
-        analysis: "",
-        recommendations: [],
+        analysis: "Enhanced analysis is currently unavailable.",
+        recommendations: ["Configure a valid Gemini API key for enhanced analysis."],
         loading: false,
-        error: "No API key provided"
+        error: "No valid API key available"
       };
     }
 
@@ -53,7 +59,7 @@ export const analyzeWithGemini = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
+        'x-goog-api-key': effectiveApiKey
       },
       body: JSON.stringify({
         contents: [

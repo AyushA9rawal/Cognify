@@ -1,4 +1,3 @@
-
 // This is a simple service to integrate with Google's Gemini API
 
 interface GeminiConfig {
@@ -6,33 +5,28 @@ interface GeminiConfig {
   modelName: string;
 }
 
+// Default API key - replace with your actual Gemini API key
+const DEFAULT_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+
 // Cache key for localStorage
 const GEMINI_API_KEY_STORAGE = 'gemini_api_key';
 
 class GeminiService {
-  private apiKey: string = '';
-  private modelName: string = 'gemini-1.5-pro'; // Updated to newer model name
+  private apiKey: string = DEFAULT_GEMINI_API_KEY;
+  private modelName: string = 'gemini-1.5-pro';
   private baseUrl: string = 'https://generativelanguage.googleapis.com/v1beta';
   
   constructor() {
     console.log("GeminiService initializing...");
-    this.loadApiKeyFromStorage();
+    // Default to the hardcoded key, no need to load from storage
+    this.apiKey = DEFAULT_GEMINI_API_KEY;
   }
   
+  // This method is kept for backward compatibility but no longer needed to initialize
   private loadApiKeyFromStorage(): void {
-    try {
-      const storedKey = localStorage.getItem(GEMINI_API_KEY_STORAGE);
-      if (storedKey && storedKey !== "YOUR_GEMINI_API_KEY_HERE" && storedKey.trim() !== '') {
-        this.apiKey = storedKey;
-        console.log("GeminiService: API key loaded from localStorage");
-      } else {
-        console.log("GeminiService: No valid API key found in localStorage");
-        // Clear any invalid keys
-        localStorage.removeItem(GEMINI_API_KEY_STORAGE);
-      }
-    } catch (e) {
-      console.error("Failed to load API key from localStorage:", e);
-    }
+    // Now we default to the hardcoded API key
+    this.apiKey = DEFAULT_GEMINI_API_KEY;
+    console.log("GeminiService: Using default API key");
   }
   
   setApiKey(key: string): void {
@@ -42,13 +36,7 @@ class GeminiService {
     }
     
     this.apiKey = key.trim();
-    try {
-      // Save to localStorage for persistence
-      localStorage.setItem(GEMINI_API_KEY_STORAGE, this.apiKey);
-      console.log("GeminiService: API key set and saved to localStorage");
-    } catch (e) {
-      console.error("Failed to save API key to localStorage:", e);
-    }
+    console.log("GeminiService: API key set manually");
   }
   
   setModel(modelName: string): void {
@@ -116,7 +104,7 @@ class GeminiService {
   async analyzeResponses(responses: Record<string, string>): Promise<string> {
     if (!this.hasApiKey()) {
       console.warn("GeminiService: No API key available for analysis");
-      return "To enable enhanced AI analysis, please configure your Gemini API key.";
+      return "Enhanced AI analysis is currently unavailable.";
     }
     
     try {
