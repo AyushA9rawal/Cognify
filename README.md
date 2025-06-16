@@ -1,3 +1,5 @@
+<h2>This is a MMSE Assessment Tool</h2>
+<h4>Mini Mental State Examination (MMSE) is a test for patients with Alzeihmers' to check their cognitive decline with a set of questions. This project automates this test.</h4>
 Follow these steps:
 
 ```sh
