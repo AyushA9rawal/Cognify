@@ -7,7 +7,7 @@ export interface GeminiResponse {
 }
 
 // Default API key - replace with your actual Gemini API key
-const DEFAULT_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+const DEFAULT_GEMINI_API_KEY = "AIzaSyDrjVHQKv6mWm7PwKi9jO07c6XrlEyJPfU";
 
 export const analyzeWithGemini = async (
   score: number,

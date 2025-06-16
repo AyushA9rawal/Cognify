@@ -6,7 +6,7 @@ interface GeminiConfig {
 }
 
 // Default API key - replace with your actual Gemini API key
-const DEFAULT_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+const DEFAULT_GEMINI_API_KEY = "AIzaSyDrjVHQKv6mWm7PwKi9jO07c6XrlEyJPfU";
 
 // Cache key for localStorage
 const GEMINI_API_KEY_STORAGE = 'gemini_api_key';

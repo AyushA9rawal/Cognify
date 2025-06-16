@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import ApiKeySetup from '@/components/ApiKeySetup';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-const DEFAULT_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+const DEFAULT_GEMINI_API_KEY = "AIzaSyDrjVHQKv6mWm7PwKi9jO07c6XrlEyJPfU";
 
 interface MLAnalysisSectionProps {
   mlAnalysis: any;
@@ -35,7 +35,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (DEFAULT_GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE") {
+    if (DEFAULT_GEMINI_API_KEY !== "AIzaSyDrjVHQKv6mWm7PwKi9jO07c6XrlEyJPfU") {
       geminiService.setApiKey(DEFAULT_GEMINI_API_KEY);
     }
   }, []);
@@ -141,7 +141,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
             <div className="mt-8 border-t border-border/30 pt-8">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-medium">Enhanced Analysis</h3>
-                {(DEFAULT_GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE" && !geminiService.hasApiKey() && !showApiKeySetup) && (
+                {(DEFAULT_GEMINI_API_KEY === "AIzaSyDrjVHQKv6mWm7PwKi9jO07c6XrlEyJPfU" && !geminiService.hasApiKey() && !showApiKeySetup) && (
                   <Button 
                     onClick={handleSetupApiKey}
                     variant="default"
@@ -153,7 +153,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
                 )}
               </div>
               
-              {(DEFAULT_GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE" && !geminiService.hasApiKey() && !showApiKeySetup) && (
+              {(DEFAULT_GEMINI_API_KEY === "AIzaSyDrjVHQKv6mWm7PwKi9jO07c6XrlEyJPfU" && !geminiService.hasApiKey() && !showApiKeySetup) && (
                 <Alert className="mb-4 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
                   <AlertTitle className="text-amber-800 dark:text-amber-300">API Key Required</AlertTitle>
                   <AlertDescription className="text-amber-700 dark:text-amber-400">
@@ -176,7 +176,7 @@ const MLAnalysisSection: React.FC<MLAnalysisSectionProps> = ({
                   {geminiAnalysis}
                   
                   {geminiAnalysis.includes("requires a Gemini API key") && 
-                   DEFAULT_GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE" && 
+                   DEFAULT_GEMINI_API_KEY === "AIzaSyDrjVHQKv6mWm7PwKi9jO07c6XrlEyJPfU" && 
                    !showApiKeySetup && (
                     <div className="mt-4 flex justify-center">
                       <Button 

@@ -202,7 +202,7 @@ export const mmseQuestions: MMSEQuestion[] = [
       
       return matchesAnyWithTolerance(lowerAnswer, validAnswers, 2);
     },
-    image: "/images/custom-watch.jpg" // Remember to add this image to public/images/
+    image: "/images/watch.jpg" // Remember to add this image to public/images/
   },
   
   // Recall
